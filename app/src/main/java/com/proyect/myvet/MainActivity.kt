@@ -26,11 +26,6 @@ class MainActivity : ComponentActivity() {
                 val authVM: AuthViewModel = viewModel()
                 val authState by authVM.state.collectAsState()
 
-                // Validar token en frío (limpia si está vencido)
-                LaunchedEffect(Unit) {
-                    authVM.validateSession()
-                }
-
                 val startDestination = "auth_screen"
 
                 NavHost(navController = navController, startDestination = startDestination) {
@@ -42,7 +37,6 @@ class MainActivity : ComponentActivity() {
                     composable(NavigationItem.Citas.route) { CitasScreen(navController) }
                 }
 
-                // Redirigir a Home solo si hay sesión válida
                 LaunchedEffect(authState.isLoggedIn) {
                     if (authState.isLoggedIn) {
                         navController.navigate(NavigationItem.Home.route) {
