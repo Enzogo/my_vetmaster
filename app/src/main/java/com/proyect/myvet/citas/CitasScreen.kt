@@ -34,6 +34,7 @@ import com.proyect.myvet.historial.HistorialCita
 import com.proyect.myvet.historial.HistorialManager
 import com.proyect.myvet.mascotas.Mascota
 import com.proyect.myvet.mascotas.MascotaManager
+import kotlinx.coroutines.launch
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 import java.util.*
@@ -160,17 +161,61 @@ fun MultiSelectMascotasDialog(mascotas: List<Mascota>, seleccionadas: List<Masco
 }
 
 
+
 @SuppressLint("ScheduleExactAlarm")
-private fun scheduleExactAlarmAndSave(context: Context, timeInMillis: Long, cita: HistorialCita, navController: NavController) {
+private fun scheduleExactAlarmAndSave(
+    context: Context,
+    timeInMillis: Long,
+    cita: HistorialCita,
+    navController: NavController
+) {
     val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !alarmManager.canScheduleExactAlarms()) {
-        Intent().also { intent -> intent.action = Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM; context.startActivity(intent) }
-        return
+        // IMPORTANTE: usa NEW_TASK cuando lanzas Settings desde un contexto que puede no ser una Activity
+        val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        context.startActivity(intent)
+        // Aún así guardamos local y continuamos navegación
     }
-    val intent = Intent(context, Notificacion::class.java).apply { putExtra("MASCOTA_NOMBRE", cita.mascota); putExtra("MOTIVO_CITA", cita.motivo) }
-    val pendingIntent = PendingIntent.getBroadcast(context, cita.id.toInt(), intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-    alarmManager.setExact(AlarmManager.RTC_WAKEUP, timeInMillis, pendingIntent)
+
+    val intent = Intent(context, Notificacion::class.java).apply {
+        putExtra("MASCOTA_NOMBRE", cita.mascota)
+        putExtra("MOTIVO_CITA", cita.motivo)
+    }
+    val pendingIntent = PendingIntent.getBroadcast(
+        context,
+        cita.id.toInt(), // si prefieres, usa (cita.id and Int.MAX_VALUE.toLong()).toInt()
+        intent,
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+    )
+
+    try {
+        alarmManager.setExact(AlarmManager.RTC_WAKEUP, timeInMillis, pendingIntent)
+    } catch (_: Exception) {
+        // Si algo falla, aún así seguimos guardando y navegando
+    }
+
+    // Guarda local (como ya usas en tu app)
     HistorialManager.guardarCita(context, cita)
     Toast.makeText(context, "Cita Guardada Exitosamente", Toast.LENGTH_SHORT).show()
-    navController.navigate(NavigationItem.Home.route) { popUpTo(NavigationItem.Home.route) { inclusive = true }; launchSingleTop = true }
+
+    // Guardado remoto no bloqueante (si el backend todavía no tiene el endpoint, no rompe el flujo)
+    try {
+        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+            val api = com.proyect.myvet.network.RetrofitClient
+                .authed(context)
+                .create(com.proyect.myvet.network.OwnerApi::class.java)
+
+            // Combina fecha + hora (ajústalo si tu backend requiere ISO real)
+            val fechaIso = "${cita.fecha} ${cita.hora}"
+            // De momento, usamos el nombre como "mascotaId"; cuando tu backend devuelva IDs reales, cámbialo
+            api.createCita(com.proyect.myvet.network.CitaCreateRequest(fechaIso, cita.motivo, cita.mascota))
+        }
+    } catch (_: Exception) {
+        // Ignoramos errores remotos para no interrumpir UX
+    }
+
+    // Ir a la pestaña Historial dentro de MainScreen
+    navController.navigate(com.proyect.myvet.NavigationItem.Historial.route)
 }

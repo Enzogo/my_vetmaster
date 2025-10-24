@@ -24,8 +24,10 @@ import com.proyect.myvet.perfil.GestionMascotasScreen
 import com.proyect.myvet.perfil.PerfilScreen
 import com.proyect.myvet.prediagnostico.PrediagnosticoScreen
 import com.proyect.myvet.ui.theme.MyVetTheme
+import com.proyect.myvet.perfil.EditarPerfilDuenoScreen
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
+
 
 @Composable
 fun MainScreen() {
@@ -35,7 +37,13 @@ fun MainScreen() {
             val navBackStackEntry by navController.currentBackStackEntryAsState()
             val currentRoute = navBackStackEntry?.destination?.route
             NavigationBar {
-                listOf(NavigationItem.Home, NavigationItem.Citas, NavigationItem.Prediagnostico, NavigationItem.Historial, NavigationItem.Perfil).forEach { item ->
+                listOf(
+                    NavigationItem.Home,
+                    NavigationItem.Citas,
+                    NavigationItem.Prediagnostico,
+                    NavigationItem.Historial,
+                    NavigationItem.Perfil
+                ).forEach { item ->
                     val isSelected = currentRoute?.startsWith(item.route) == true
                     NavigationBarItem(
                         selected = isSelected,
@@ -54,7 +62,9 @@ fun MainScreen() {
         }
     ) { innerPadding ->
         NavHost(navController, startDestination = NavigationItem.Home.route, Modifier.padding(innerPadding)) {
-            composable(NavigationItem.Home.route) { Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Bienvenido A My Vet") } }
+            composable(NavigationItem.Home.route) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Bienvenido A My Vet") }
+            }
             composable(
                 route = "${NavigationItem.Citas.route}?motivo={motivo}",
                 arguments = listOf(navArgument("motivo") { type = NavType.StringType; nullable = true; defaultValue = null })
@@ -73,10 +83,8 @@ fun MainScreen() {
             }
             composable(NavigationItem.Perfil.route) { PerfilScreen(navController = navController) }
 
-            // --- ¡NUEVAS RUTAS! ---
-            composable("gestion_mascotas") {
-                GestionMascotasScreen(navController = navController)
-            }
+            // Rutas extra
+            composable("gestion_mascotas") { GestionMascotasScreen(navController = navController) }
             composable(
                 route = "registrar_mascota?mascotaId={mascotaId}",
                 arguments = listOf(navArgument("mascotaId") { type = NavType.StringType; nullable = true })
@@ -84,6 +92,8 @@ fun MainScreen() {
                 val mascotaId = it.arguments?.getString("mascotaId")?.toLongOrNull()
                 RegistrarMascotaScreen(navController = navController, mascotaId = mascotaId)
             }
+            // NUEVO: editar perfil del dueño (MongoDB)
+            composable("editar_perfil") { EditarPerfilDuenoScreen(navController = navController) }
         }
     }
 }

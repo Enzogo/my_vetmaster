@@ -5,51 +5,51 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 
 object MascotaManager {
-    private const val PREFS_NAME = "mascotas_prefs"
-    private const val KEY_MASCOTAS = "lista_mascotas"
+    private const val PREFS = "mascotas_prefs"
+    private const val KEY = "mascotas_json"
     private val gson = Gson()
+    private val listType = object : TypeToken<MutableList<Mascota>>() {}.type
 
-    private fun guardarLista(context: Context, mascotas: List<Mascota>) {
-        val jsonString = gson.toJson(mascotas)
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        prefs.edit().putString(KEY_MASCOTAS, jsonString).apply()
-    }
+    private fun getPrefs(context: Context) =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
-    fun obtenerMascotas(context: Context): List<Mascota> {
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val jsonString = prefs.getString(KEY_MASCOTAS, null)
-        return if (jsonString != null) {
-            val type = object : TypeToken<List<Mascota>>() {}.type
-            gson.fromJson(jsonString, type)
-        } else {
-            emptyList()
+    private fun loadAll(context: Context): MutableList<Mascota> {
+        val json = getPrefs(context).getString(KEY, null) ?: return mutableListOf()
+        return try {
+            gson.fromJson(json, listType) ?: mutableListOf()
+        } catch (_: Exception) {
+            mutableListOf()
         }
     }
 
-    fun obtenerMascotaPorId(context: Context, id: Long): Mascota? {
-        return obtenerMascotas(context).find { it.id == id }
+    private fun saveAll(context: Context, list: List<Mascota>) {
+        getPrefs(context).edit().putString(KEY, gson.toJson(list)).apply()
     }
+
+    fun obtenerMascotas(context: Context): List<Mascota> =
+        loadAll(context)
+
+    fun obtenerMascotaPorId(context: Context, id: Long): Mascota? =
+        loadAll(context).firstOrNull { it.id == id }
 
     fun guardarMascota(context: Context, mascota: Mascota) {
-        val mascotas = obtenerMascotas(context).toMutableList()
-        mascotas.add(mascota)
-        guardarLista(context, mascotas)
+        val list = loadAll(context)
+        list.add(mascota)
+        saveAll(context, list)
     }
 
-    // --- ¡NUEVA FUNCIÓN! ---
-    fun actualizarMascota(context: Context, mascotaActualizada: Mascota) {
-        val mascotas = obtenerMascotas(context).toMutableList()
-        val index = mascotas.indexOfFirst { it.id == mascotaActualizada.id }
-        if (index != -1) {
-            mascotas[index] = mascotaActualizada
-            guardarLista(context, mascotas)
+    fun actualizarMascota(context: Context, mascota: Mascota) {
+        val list = loadAll(context)
+        val idx = list.indexOfFirst { it.id == mascota.id }
+        if (idx >= 0) {
+            list[idx] = mascota
+            saveAll(context, list)
         }
     }
 
-    // --- ¡NUEVA FUNCIÓN! ---
-    fun eliminarMascota(context: Context, mascotaId: Long) {
-        val mascotas = obtenerMascotas(context).toMutableList()
-        mascotas.removeAll { it.id == mascotaId }
-        guardarLista(context, mascotas)
+    fun eliminarMascota(context: Context, id: Long) {
+        val list = loadAll(context)
+        val newList = list.filterNot { it.id == id }
+        saveAll(context, newList)
     }
 }

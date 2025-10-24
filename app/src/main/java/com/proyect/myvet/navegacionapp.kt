@@ -4,23 +4,35 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.proyect.myvet.vet.VeterinarioHomeScreen
+import com.proyect.myvet.perfil.PerfilScreen
+import com.proyect.myvet.citas.CitasScreen
+import com.proyect.myvet.perfil.GestionMascotasScreen
 
 @Composable
 fun AppNavigation() {
-    // Este es el controlador de navegación principal de TODA la aplicación.
     val navController = rememberNavController()
 
-    // NavHost es el contenedor que intercambia las pantallas.
-    NavHost(navController = navController, startDestination = "auth_screen") {
+    NavHost(
+        navController = navController,
+        startDestination = "auth_screen"
+    ) {
+        composable("auth_screen") { IniciosesionScreen(navController) }
 
-        // Definimos la ruta para la pantalla de autenticación.
-        composable("auth_screen") {
-            AuthScreen(navController = navController)
-        }
+        // Home de Dueño (tu pantalla actual)
+        composable("main_screen") { MainScreen() }
 
-        // Definimos la ruta para la pantalla principal (la que ya tenías).
-        composable("main_screen") {
-            MainScreen()
-        }
+        // Veterinario
+        composable("vet_home") { VeterinarioHomeScreen() }
+
+        // Perfil de Dueño (si navegas desde MainScreen a esta)
+        composable("perfil_dueno") { PerfilScreen(navController) }
+
+        // Usar tu pantalla existente de Citas para registrar
+        composable("registrar_cita") { CitasScreen(navController) }
+
+        // Si tienes una pantalla de gestión de mascotas con esta ruta,
+        // puedes definir aquí su destino:
+        composable("gestion_mascotas") { GestionMascotasScreen(navController) }
     }
 }

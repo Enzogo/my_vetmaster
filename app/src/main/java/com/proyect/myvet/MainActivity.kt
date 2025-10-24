@@ -1,41 +1,55 @@
 package com.proyect.myvet
 
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.content.Context
-import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.ui.Modifier
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.proyect.myvet.auth.AuthViewModel
+import com.proyect.myvet.citas.CitasScreen
+import com.proyect.myvet.mascotas.GestionMascotasScreen
+import com.proyect.myvet.mascotas.RegistrarMascotaScreen
+import com.proyect.myvet.perfil.EditarPerfilDuenoScreen
 import com.proyect.myvet.ui.theme.MyVetTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        // El código del canal de notificaciones no cambia.
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val name = "Recordatorio de Citas"
-            val descriptionText = "Canal para notificaciones de citas de MyVet"
-            val importance = NotificationManager.IMPORTANCE_HIGH
-            val channel = NotificationChannel("citas_channel_id", name, importance).apply {
-                description = descriptionText
-            }
-            val notificationManager: NotificationManager =
-                getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager.createNotificationChannel(channel)
-        }
-
         setContent {
             MyVetTheme {
-                Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                    // --- CAMBIO AQUÍ ---
-                    // En lugar de llamar a MainScreen(), ahora llamamos a nuestro gestor de navegación.
-                    AppNavigation()
+                val navController = rememberNavController()
+                val authVM: AuthViewModel = viewModel()
+                val authState by authVM.state.collectAsState()
+
+                // Validar token en frío (limpia si está vencido)
+                LaunchedEffect(Unit) {
+                    authVM.validateSession()
+                }
+
+                val startDestination = "auth_screen"
+
+                NavHost(navController = navController, startDestination = startDestination) {
+                    composable("auth_screen") { IniciosesionScreen(navController) }
+                    composable(NavigationItem.Home.route) { MainScreen() }
+                    composable("editar_perfil") { EditarPerfilDuenoScreen(navController) }
+                    composable("registrar_mascota") { RegistrarMascotaScreen(navController) }
+                    composable("gestion_mascotas") { GestionMascotasScreen(navController) }
+                    composable(NavigationItem.Citas.route) { CitasScreen(navController) }
+                }
+
+                // Redirigir a Home solo si hay sesión válida
+                LaunchedEffect(authState.isLoggedIn) {
+                    if (authState.isLoggedIn) {
+                        navController.navigate(NavigationItem.Home.route) {
+                            popUpTo("auth_screen") { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    }
                 }
             }
         }

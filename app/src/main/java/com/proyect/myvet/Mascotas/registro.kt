@@ -13,14 +13,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.proyect.myvet.network.MascotaCreateRequest
+import com.proyect.myvet.network.OwnerApi
+import com.proyect.myvet.network.RetrofitClient
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegistrarMascotaScreen(navController: NavController, mascotaId: Long? = null) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val isEditMode = mascotaId != null
 
-    // Carga la mascota si estamos en modo edición
     val mascotaAEditar = remember(mascotaId) {
         if (isEditMode) MascotaManager.obtenerMascotaPorId(context, mascotaId!!) else null
     }
@@ -30,6 +34,7 @@ fun RegistrarMascotaScreen(navController: NavController, mascotaId: Long? = null
     var raza by remember { mutableStateOf(mascotaAEditar?.raza ?: "") }
     var fechaNacimiento by remember { mutableStateOf(mascotaAEditar?.fechaNacimiento ?: "") }
     var sexo by remember { mutableStateOf(mascotaAEditar?.sexo ?: "") }
+    var loading by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -44,7 +49,11 @@ fun RegistrarMascotaScreen(navController: NavController, mascotaId: Long? = null
         }
     ) { padding ->
         Column(
-            modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp).verticalScroll(rememberScrollState()),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             OutlinedTextField(value = nombre, onValueChange = { nombre = it }, label = { Text("Nombre") }, modifier = Modifier.fillMaxWidth())
@@ -61,23 +70,52 @@ fun RegistrarMascotaScreen(navController: NavController, mascotaId: Long? = null
             Button(
                 onClick = {
                     if (nombre.isNotBlank() && especie.isNotBlank()) {
+                        loading = true
                         if (isEditMode) {
-                            val mascotaActualizada = Mascota(mascotaId!!, nombre, especie, raza, fechaNacimiento, sexo)
+                            val mascotaActualizada = Mascota(mascotaId!!, nombre, especie, raza.ifBlank { null }, fechaNacimiento.ifBlank { null }, sexo.ifBlank { null })
                             MascotaManager.actualizarMascota(context, mascotaActualizada)
-                            Toast.makeText(context, "${nombre} actualizado", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "$nombre actualizado", Toast.LENGTH_SHORT).show()
+                            loading = false
+                            navController.popBackStack()
                         } else {
-                            val nuevaMascota = Mascota(nombre = nombre, especie = especie, raza = raza, fechaNacimiento = fechaNacimiento, sexo = sexo)
-                            MascotaManager.guardarMascota(context, nuevaMascota)
-                            Toast.makeText(context, "${nombre} guardado", Toast.LENGTH_SHORT).show()
+                            val nueva = Mascota(
+                                nombre = nombre,
+                                especie = especie,
+                                raza = raza.ifBlank { null },
+                                fechaNacimiento = fechaNacimiento.ifBlank { null },
+                                sexo = sexo.ifBlank { null }
+                            )
+                            MascotaManager.guardarMascota(context, nueva)
+
+                            // Guardado remoto no bloqueante
+                            scope.launch {
+                                try {
+                                    val api = RetrofitClient.authed(context).create(OwnerApi::class.java)
+                                    api.createMascota(
+                                        MascotaCreateRequest(
+                                            nombre = nombre,
+                                            especie = especie,
+                                            raza = raza.takeIf { it.isNotBlank() },
+                                            fechaNacimiento = fechaNacimiento.takeIf { it.isNotBlank() },
+                                            sexo = sexo.takeIf { it.isNotBlank() }
+                                        )
+                                    )
+                                } catch (_: Exception) {
+                                } finally {
+                                    loading = false
+                                    Toast.makeText(context, "$nombre guardado", Toast.LENGTH_SHORT).show()
+                                    navController.popBackStack()
+                                }
+                            }
                         }
-                        navController.popBackStack()
                     } else {
                         Toast.makeText(context, "Nombre y especie son obligatorios", Toast.LENGTH_SHORT).show()
                     }
                 },
+                enabled = !loading,
                 modifier = Modifier.fillMaxWidth().height(50.dp)
             ) {
-                Text(if (isEditMode) "Actualizar Mascota" else "Guardar Mascota")
+                Text(if (loading) "Guardando..." else if (isEditMode) "Actualizar" else "Guardar")
             }
         }
     }
