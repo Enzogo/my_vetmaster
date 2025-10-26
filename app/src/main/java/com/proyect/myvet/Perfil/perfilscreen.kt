@@ -19,21 +19,36 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.proyect.myvet.NavigationItem
 import com.proyect.myvet.auth.AuthViewModel
-import com.proyect.myvet.historial.HistorialCita
-import com.proyect.myvet.historial.HistorialManager
-import com.proyect.myvet.mascotas.Mascota
-import com.proyect.myvet.mascotas.MascotaManager
+import kotlinx.coroutines.launch
 
 @Composable
 fun PerfilScreen(navController: NavController) {
     val context = LocalContext.current
     val authVM: AuthViewModel = viewModel()
+    val scope = rememberCoroutineScope()
 
-    val mascotas by remember { mutableStateOf(MascotaManager.obtenerMascotas(context)) }
-    val citas by remember { mutableStateOf(HistorialManager.obtenerCitas(context)) }
+    var mascotas by remember { mutableStateOf<List<com.proyect.myvet.network.MascotaDto>>(emptyList()) }
+    var citas by remember { mutableStateOf<List<com.proyect.myvet.network.CitaDto>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(false) }
 
     val email = remember { context.getSharedPreferences("auth_prefs", Context.MODE_PRIVATE).getString("email", null) }
     val nombre = remember { context.getSharedPreferences("auth_prefs", Context.MODE_PRIVATE).getString("nombre", null) }
+
+    // Load data from backend
+    LaunchedEffect(Unit) {
+        isLoading = true
+        scope.launch {
+            try {
+                val api = com.proyect.myvet.network.RetrofitClient.authed(context).create(com.proyect.myvet.network.OwnerApi::class.java)
+                mascotas = api.getMyMascotas()
+                citas = api.getMyCitas()
+            } catch (_: Exception) {
+                // Silently fail - user can still navigate
+            } finally {
+                isLoading = false
+            }
+        }
+    }
 
     Column(Modifier.fillMaxSize().padding(16.dp)) {
         Text("Perfil de Dueño", fontSize = 24.sp, fontWeight = FontWeight.Bold)
@@ -74,15 +89,19 @@ fun PerfilScreen(navController: NavController) {
 
         Spacer(Modifier.height(16.dp))
 
-        Text("Mis Mascotas", fontWeight = FontWeight.Bold)
-        Spacer(Modifier.height(8.dp))
-        SimpleMascotaList(mascotas)
+        if (isLoading) {
+            Text("Cargando...", fontWeight = FontWeight.Bold)
+        } else {
+            Text("Mis Mascotas (${mascotas.size})", fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(8.dp))
+            SimpleMascotaList(mascotas)
 
-        Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(8.dp))
 
-        Text("Mis Citas", fontWeight = FontWeight.Bold)
-        Spacer(Modifier.height(8.dp))
-        SimpleCitasList(citas)
+            Text("Mis Citas (${citas.size})", fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(8.dp))
+            SimpleCitasList(citas)
+        }
 
         Spacer(Modifier.height(12.dp))
 
@@ -103,13 +122,13 @@ fun PerfilScreen(navController: NavController) {
 }
 
 @Composable
-private fun SimpleMascotaList(mascotas: List<Mascota>) {
+private fun SimpleMascotaList(mascotas: List<com.proyect.myvet.network.MascotaDto>) {
     LazyColumn(Modifier.fillMaxWidth().heightIn(min = 0.dp, max = 220.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        items(mascotas) { m ->
+        items(mascotas, key = { it.id ?: System.currentTimeMillis() }) { m ->
             ElevatedCard(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(12.dp)) {
-                    Text(m.nombre, style = MaterialTheme.typography.titleMedium)
-                    Text("Especie: ${m.especie}  Raza: ${m.raza ?: "-"}")
+                    Text(m.nombre ?: "(sin nombre)", style = MaterialTheme.typography.titleMedium)
+                    Text("Especie: ${m.especie ?: "-"}  Raza: ${m.raza ?: "-"}")
                 }
             }
         }
@@ -117,14 +136,14 @@ private fun SimpleMascotaList(mascotas: List<Mascota>) {
 }
 
 @Composable
-private fun SimpleCitasList(citas: List<HistorialCita>) {
+private fun SimpleCitasList(citas: List<com.proyect.myvet.network.CitaDto>) {
     LazyColumn(Modifier.fillMaxWidth().heightIn(min = 0.dp, max = 220.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        items(citas) { c ->
+        items(citas, key = { it.id ?: System.currentTimeMillis() }) { c ->
             ElevatedCard(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(12.dp)) {
-                    Text("Fecha: ${c.fecha}", style = MaterialTheme.typography.titleMedium)
-                    Text("Hora: ${c.hora}  Motivo: ${c.motivo}")
-                    Text("Mascota(s): ${c.mascota} | Dueño: ${c.dueno}")
+                    Text("Fecha: ${c.fechaIso ?: "-"}", style = MaterialTheme.typography.titleMedium)
+                    Text("Motivo: ${c.motivo ?: "-"}")
+                    Text("Estado: ${c.estado ?: "Pendiente"}")
                 }
             }
         }
