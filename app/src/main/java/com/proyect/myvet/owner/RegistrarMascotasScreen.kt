@@ -32,7 +32,9 @@ fun RegistrarMascotaScreen(navController: NavController) {
             onClick = {
                 vm.addMascota(
                     nombre, especie, raza.ifBlank { null },
-                    onDone = { navController.popBackStack() },
+                    onDone = { navController.navigate("gestion_mascotas") {
+                        popUpTo("registrar_mascota") { inclusive = true }
+                    } },
                     onError = { /* Muestra snackbar si quieres */ }
                 )
             },
