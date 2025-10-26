@@ -10,13 +10,13 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 
 @Composable
-fun VeterinarioHomeScreen() {
+fun VeterinarioHomeScreen(initialTab: Int = 1) { // Start on Citas tab (index 1)
     val vm: VetViewModel = viewModel()
     val state by vm.state.collectAsState()
 
     LaunchedEffect(Unit) { vm.loadAll() }
 
-    var selectedTab by remember { mutableStateOf(0) }
+    var selectedTab by remember { mutableStateOf(initialTab) }
     val tabs = listOf("Personas", "Citas", "Mascotas")
 
     Column(Modifier.fillMaxSize()) {

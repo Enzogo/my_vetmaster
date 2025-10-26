@@ -24,8 +24,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.proyect.myvet.NavigationItem
 import com.proyect.myvet.Notificacion
+import com.proyect.myvet.auth.AuthViewModel
 import com.proyect.myvet.historial.HistorialCita
 import com.proyect.myvet.historial.HistorialManager
 import com.proyect.myvet.network.CitaCreateRequest
@@ -49,6 +51,7 @@ fun CitasScreen(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val authVM: AuthViewModel = viewModel()
 
     // Decodificar el motivo inicial (si vino por query param)
     val motivoPrefill = remember(motivoInicial) {
@@ -202,6 +205,7 @@ fun CitasScreen(
                         launch(Dispatchers.Main) {
                             if (code == 401) {
                                 Toast.makeText(context, "Sesión expirada. Inicia sesión nuevamente.", Toast.LENGTH_SHORT).show()
+                                authVM.logout() // MainActivity redirige al login
                             } else {
                                 Toast.makeText(context, "Error al guardar cita", Toast.LENGTH_SHORT).show()
                             }

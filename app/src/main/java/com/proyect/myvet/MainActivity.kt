@@ -11,11 +11,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.proyect.myvet.auth.AuthViewModel
-import com.proyect.myvet.citas.CitasScreen
-import com.proyect.myvet.mascotas.GestionMascotasScreen
-import com.proyect.myvet.mascotas.RegistrarMascotaScreen
-import com.proyect.myvet.perfil.EditarPerfilDuenoScreen
 import com.proyect.myvet.ui.theme.MyVetTheme
+import com.proyect.myvet.vet.VeterinarioHomeScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -33,18 +30,16 @@ class MainActivity : ComponentActivity() {
 
                 NavHost(navController = navController, startDestination = startDestination) {
                     composable("auth_screen") { IniciosesionScreen(navController) }
+                    composable("register_screen") { RegistroScreen(navController) }
                     composable(NavigationItem.Home.route) { MainScreen() }
-                    composable("editar_perfil") { EditarPerfilDuenoScreen(navController) }
-                    composable("registrar_mascota") { RegistrarMascotaScreen(navController) }
-                    composable("gestion_mascotas") { GestionMascotasScreen(navController) }
-                    composable(NavigationItem.Citas.route) { CitasScreen(navController) }
+                    composable("veterinario_home") { VeterinarioHomeScreen() }
                 }
 
                 // Si inicia sesión, enviamos al destino según rol
                 LaunchedEffect(authState.isLoggedIn, authState.role) {
                     if (authState.isLoggedIn) {
                         val dest = if (authState.role == "veterinario") {
-                            NavigationItem.Citas.route // veterinario
+                            "veterinario_home"  // veterinario
                         } else {
                             NavigationItem.Home.route  // dueño
                         }

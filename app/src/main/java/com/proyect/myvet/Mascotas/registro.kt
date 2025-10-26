@@ -7,7 +7,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.proyect.myvet.auth.AuthViewModel
 import com.proyect.myvet.network.MascotaCreateRequest
 import com.proyect.myvet.network.OwnerApi
 import com.proyect.myvet.network.RetrofitClient
@@ -18,6 +20,7 @@ import retrofit2.HttpException
 fun RegistrarMascotaScreen(navController: NavController, mascotaId: Long? = null) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val authVM: AuthViewModel = viewModel()
 
     var nombre by remember { mutableStateOf("") }
     var especie by remember { mutableStateOf("") }
@@ -43,6 +46,7 @@ fun RegistrarMascotaScreen(navController: NavController, mascotaId: Long? = null
                         val code = (e as? HttpException)?.code()
                         if (code == 401) {
                             Toast.makeText(context, "Sesión expirada. Inicia sesión.", Toast.LENGTH_SHORT).show()
+                            authVM.logout() // MainActivity redirige al login
                         } else {
                             Toast.makeText(context, "Error al guardar mascota", Toast.LENGTH_SHORT).show()
                         }

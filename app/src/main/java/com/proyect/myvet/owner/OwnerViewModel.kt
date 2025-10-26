@@ -66,4 +66,45 @@ class OwnerViewModel(app: Application) : AndroidViewModel(app) {
             if (res.isSuccess) onDone() else onError(res.exceptionOrNull()?.message ?: "Error al crear cita")
         }
     }
+
+    fun updateMascota(
+        id: String,
+        nombre: String,
+        especie: String,
+        raza: String?,
+        fechaNacimiento: String?,
+        sexo: String?,
+        onDone: () -> Unit,
+        onError: (Exception) -> Unit
+    ) {
+        _state.value = _state.value.copy(loading = true, error = null)
+        viewModelScope.launch {
+            val res = repo.updateMascota(id, nombre.trim(), especie.trim(), raza?.trim(), fechaNacimiento?.trim(), sexo?.trim())
+            _state.value = _state.value.copy(loading = false)
+            if (res.isSuccess) {
+                refreshLists()
+                onDone()
+            } else {
+                onError(res.exceptionOrNull() ?: Exception("Error al actualizar mascota"))
+            }
+        }
+    }
+
+    fun deleteMascota(
+        id: String,
+        onDone: () -> Unit,
+        onError: (Exception) -> Unit
+    ) {
+        _state.value = _state.value.copy(loading = true, error = null)
+        viewModelScope.launch {
+            val res = repo.deleteMascota(id)
+            _state.value = _state.value.copy(loading = false)
+            if (res.isSuccess) {
+                refreshLists()
+                onDone()
+            } else {
+                onError(res.exceptionOrNull() ?: Exception("Error al eliminar mascota"))
+            }
+        }
+    }
 }
