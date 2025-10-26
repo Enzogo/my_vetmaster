@@ -73,7 +73,13 @@ fun GestionMascotasScreen(navController: NavController) {
                                     null,
                                     onDone = { Toast.makeText(context, "Mascota actualizada", Toast.LENGTH_SHORT).show() },
                                     onError = { err ->
-                                        Toast.makeText(context, "Error: $err", Toast.LENGTH_SHORT).show()
+                                        val code = (err as? retrofit2.HttpException)?.code()
+                                        if (code == 401) {
+                                            Toast.makeText(context, "Sesión expirada", Toast.LENGTH_SHORT).show()
+                                            authVM.logout()
+                                        } else {
+                                            Toast.makeText(context, "Error: ${err.message}", Toast.LENGTH_SHORT).show()
+                                        }
                                     }
                                 )
                             }) { Text("Guardar cambios") }
@@ -83,7 +89,13 @@ fun GestionMascotasScreen(navController: NavController) {
                                     m.id ?: "",
                                     onDone = { Toast.makeText(context, "Mascota eliminada", Toast.LENGTH_SHORT).show() },
                                     onError = { err ->
-                                        Toast.makeText(context, "Error: $err", Toast.LENGTH_SHORT).show()
+                                        val code = (err as? retrofit2.HttpException)?.code()
+                                        if (code == 401) {
+                                            Toast.makeText(context, "Sesión expirada", Toast.LENGTH_SHORT).show()
+                                            authVM.logout()
+                                        } else {
+                                            Toast.makeText(context, "Error: ${err.message}", Toast.LENGTH_SHORT).show()
+                                        }
                                     }
                                 )
                             }) { Text("Eliminar") }

@@ -75,7 +75,7 @@ class OwnerViewModel(app: Application) : AndroidViewModel(app) {
         fechaNacimiento: String?,
         sexo: String?,
         onDone: () -> Unit,
-        onError: (String) -> Unit
+        onError: (Exception) -> Unit
     ) {
         _state.value = _state.value.copy(loading = true, error = null)
         viewModelScope.launch {
@@ -85,7 +85,7 @@ class OwnerViewModel(app: Application) : AndroidViewModel(app) {
                 refreshLists()
                 onDone()
             } else {
-                onError(res.exceptionOrNull()?.message ?: "Error al actualizar mascota")
+                onError(res.exceptionOrNull() ?: Exception("Error al actualizar mascota"))
             }
         }
     }
@@ -93,7 +93,7 @@ class OwnerViewModel(app: Application) : AndroidViewModel(app) {
     fun deleteMascota(
         id: String,
         onDone: () -> Unit,
-        onError: (String) -> Unit
+        onError: (Exception) -> Unit
     ) {
         _state.value = _state.value.copy(loading = true, error = null)
         viewModelScope.launch {
@@ -103,7 +103,7 @@ class OwnerViewModel(app: Application) : AndroidViewModel(app) {
                 refreshLists()
                 onDone()
             } else {
-                onError(res.exceptionOrNull()?.message ?: "Error al eliminar mascota")
+                onError(res.exceptionOrNull() ?: Exception("Error al eliminar mascota"))
             }
         }
     }
