@@ -8,7 +8,7 @@ data class RegisterRequest(
     val email: String,
     val password: String,
     val role: String,          // "dueno" o "veterinario"
-    val nombre: String? = null // opcional
+    val nombre: String? = null
 )
 
 data class LoginRequest(val email: String, val password: String)

@@ -26,6 +26,9 @@ class MainActivity : ComponentActivity() {
                 val authVM: AuthViewModel = viewModel()
                 val authState by authVM.state.collectAsState()
 
+                // Forzamos validar al inicio para evitar tokens “fantasma”
+                LaunchedEffect(Unit) { authVM.validateSession() }
+
                 val startDestination = "auth_screen"
 
                 NavHost(navController = navController, startDestination = startDestination) {
@@ -37,10 +40,26 @@ class MainActivity : ComponentActivity() {
                     composable(NavigationItem.Citas.route) { CitasScreen(navController) }
                 }
 
-                LaunchedEffect(authState.isLoggedIn) {
+                // Si inicia sesión, enviamos al destino según rol
+                LaunchedEffect(authState.isLoggedIn, authState.role) {
                     if (authState.isLoggedIn) {
-                        navController.navigate(NavigationItem.Home.route) {
+                        val dest = if (authState.role == "veterinario") {
+                            NavigationItem.Citas.route // veterinario
+                        } else {
+                            NavigationItem.Home.route  // dueño
+                        }
+                        navController.navigate(dest) {
                             popUpTo("auth_screen") { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    }
+                }
+
+                // Si cierra sesión o token inválido → volver al login y limpiar backstack
+                LaunchedEffect(authState.isLoggedIn) {
+                    if (!authState.isLoggedIn) {
+                        navController.navigate("auth_screen") {
+                            popUpTo(0)
                             launchSingleTop = true
                         }
                     }

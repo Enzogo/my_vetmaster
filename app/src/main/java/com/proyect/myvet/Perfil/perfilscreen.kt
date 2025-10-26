@@ -15,8 +15,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.proyect.myvet.NavigationItem
+import com.proyect.myvet.auth.AuthViewModel
 import com.proyect.myvet.historial.HistorialCita
 import com.proyect.myvet.historial.HistorialManager
 import com.proyect.myvet.mascotas.Mascota
@@ -25,6 +27,7 @@ import com.proyect.myvet.mascotas.MascotaManager
 @Composable
 fun PerfilScreen(navController: NavController) {
     val context = LocalContext.current
+    val authVM: AuthViewModel = viewModel()
 
     val mascotas by remember { mutableStateOf(MascotaManager.obtenerMascotas(context)) }
     val citas by remember { mutableStateOf(HistorialManager.obtenerCitas(context)) }
@@ -85,8 +88,9 @@ fun PerfilScreen(navController: NavController) {
 
         Button(
             onClick = {
+                // Solo limpiar sesión; navegación la maneja MainActivity
                 context.getSharedPreferences("auth_prefs", Context.MODE_PRIVATE).edit().clear().apply()
-                navController.navigate("auth_screen") { popUpTo(0) { inclusive = true } }
+                authVM.logout()
             },
             modifier = Modifier.fillMaxWidth().height(48.dp),
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.errorContainer)

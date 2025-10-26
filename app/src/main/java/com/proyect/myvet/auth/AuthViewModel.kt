@@ -29,9 +29,6 @@ class AuthViewModel(app: Application) : AndroidViewModel(app) {
     )
     val state: StateFlow<AuthUiState> = _state
 
-    fun getRole(): String? = repo.getRole()
-
-    // Llama esto al inicio para asegurar que el token no esté vencido
     fun validateSession() {
         _state.value = _state.value.copy(
             isLoggedIn = repo.isLoggedIn(),
@@ -41,12 +38,7 @@ class AuthViewModel(app: Application) : AndroidViewModel(app) {
         )
     }
 
-    fun login(
-        email: String,
-        password: String,
-        onSuccess: () -> Unit = {},
-        onError: (String) -> Unit = {}
-    ) {
+    fun login(email: String, password: String, onSuccess: () -> Unit = {}, onError: (String) -> Unit = {}) {
         _state.value = _state.value.copy(loading = true, error = null)
         viewModelScope.launch {
             val res = repo.login(email, password)
@@ -62,14 +54,7 @@ class AuthViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun register(
-        email: String,
-        password: String,
-        role: String,
-        nombre: String? = null,
-        onSuccess: () -> Unit = {},
-        onError: (String) -> Unit = {}
-    ) {
+    fun register(email: String, password: String, role: String, nombre: String? = null, onSuccess: () -> Unit = {}, onError: (String) -> Unit = {}) {
         _state.value = _state.value.copy(loading = true, error = null)
         viewModelScope.launch {
             val res = repo.register(email, password, role, nombre)
@@ -87,11 +72,6 @@ class AuthViewModel(app: Application) : AndroidViewModel(app) {
 
     fun logout() {
         repo.logout()
-        _state.value = _state.value.copy(
-            isLoggedIn = false,
-            role = null,
-            email = null,
-            nombre = null
-        )
+        _state.value = _state.value.copy(isLoggedIn = false, role = null, email = null, nombre = null)
     }
 }

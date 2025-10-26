@@ -28,7 +28,6 @@ import com.proyect.myvet.perfil.EditarPerfilDuenoScreen
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 
-
 @Composable
 fun MainScreen() {
     val navController = rememberNavController()
@@ -82,8 +81,6 @@ fun MainScreen() {
                 DetalleHistorialScreen(navController = navController, cita = cita)
             }
             composable(NavigationItem.Perfil.route) { PerfilScreen(navController = navController) }
-
-            // Rutas extra
             composable("gestion_mascotas") { GestionMascotasScreen(navController = navController) }
             composable(
                 route = "registrar_mascota?mascotaId={mascotaId}",
@@ -92,7 +89,6 @@ fun MainScreen() {
                 val mascotaId = it.arguments?.getString("mascotaId")?.toLongOrNull()
                 RegistrarMascotaScreen(navController = navController, mascotaId = mascotaId)
             }
-            // NUEVO: editar perfil del dueño (MongoDB)
             composable("editar_perfil") { EditarPerfilDuenoScreen(navController = navController) }
         }
     }

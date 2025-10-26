@@ -8,7 +8,6 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
 object RetrofitClient {
-    // Emulador Android -> host local
     private const val BASE_URL = "http://10.0.2.2:4000/"
 
     private val logger = HttpLoggingInterceptor().apply {
@@ -22,7 +21,6 @@ object RetrofitClient {
             .readTimeout(20, TimeUnit.SECONDS)
             .writeTimeout(20, TimeUnit.SECONDS)
 
-    // Cliente sin token (Auth)
     val instance: Retrofit by lazy {
         Retrofit.Builder()
             .baseUrl(BASE_URL)
@@ -31,7 +29,6 @@ object RetrofitClient {
             .build()
     }
 
-    // Cliente con token (Owner/Vet)
     fun authed(context: Context): Retrofit =
         Retrofit.Builder()
             .baseUrl(BASE_URL)

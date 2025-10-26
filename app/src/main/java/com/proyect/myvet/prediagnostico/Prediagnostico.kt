@@ -1,105 +1,56 @@
 package com.proyect.myvet.prediagnostico
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.proyect.myvet.NavigationItem
+import com.proyect.myvet.network.PrediagnosticoApi
+import com.proyect.myvet.network.PrediRequest
+import com.proyect.myvet.network.RetrofitClient
+import kotlinx.coroutines.launch
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import kotlin.jvm.java
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PrediagnosticoScreen(navController: NavController) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
     var sintomas by remember { mutableStateOf("") }
-    var prediagnostico by remember { mutableStateOf("") }
-    var isLoading by remember { mutableStateOf(false) }
+    var especie by remember { mutableStateOf("") }
+    var edad by remember { mutableStateOf("") }
+    var sexo by remember { mutableStateOf("") }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            "Pre-diagnóstico con IA",
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 24.dp)
-        )
-
-        OutlinedTextField(
-            value = sintomas,
-            onValueChange = { sintomas = it },
-            label = { Text("Síntomas y observaciones") },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(150.dp)
-                .padding(bottom = 16.dp)
-        )
+    Column(Modifier.fillMaxSize().padding(16.dp)) {
+        OutlinedTextField(sintomas, { sintomas = it }, label = { Text("Síntomas/Observaciones") }, modifier = Modifier.fillMaxWidth().height(140.dp))
+        Spacer(Modifier.height(8.dp))
+        OutlinedTextField(especie, { especie = it }, label = { Text("Especie") }, modifier = Modifier.fillMaxWidth())
+        Spacer(Modifier.height(8.dp))
+        OutlinedTextField(edad, { edad = it }, label = { Text("Edad") }, modifier = Modifier.fillMaxWidth())
+        Spacer(Modifier.height(8.dp))
+        OutlinedTextField(sexo, { sexo = it }, label = { Text("Sexo") }, modifier = Modifier.fillMaxWidth())
+        Spacer(Modifier.height(16.dp))
 
         Button(
             onClick = {
-                isLoading = true
-                prediagnostico = ""
-                GlobalScope.launch {
-                    delay(2000)
-                    prediagnostico = "Basado en los síntomas reportados de '${sintomas}', el pre-diagnóstico preliminar podría ser una infección respiratoria leve. Se recomienda realizar un examen físico completo para confirmar."
-                    isLoading = false
-                }
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(50.dp),
-            enabled = !isLoading && sintomas.isNotBlank()
-        ) {
-            if (isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(24.dp),
-                    color = MaterialTheme.colorScheme.onPrimary
-                )
-            } else {
-                Text("Generar Pre-diagnóstico", fontSize = 18.sp)
-            }
-        }
-
-        Spacer(Modifier.height(32.dp))
-
-        if (prediagnostico.isNotEmpty()) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                elevation = CardDefaults.cardElevation(4.dp)
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        "Resultado del Pre-diagnóstico:",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 18.sp
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    Text(prediagnostico)
-                    Spacer(Modifier.height(16.dp))
-                    Button(
-                        onClick = {
-                            // **LA SOLUCIÓN PARA LA NAVEGACIÓN:**
-                            // Navegamos a la ruta de Citas, pero sin borrar la pantalla actual del historial.
-                            val encodedMotivo = URLEncoder.encode(prediagnostico, StandardCharsets.UTF_8.toString())
-                            navController.navigate("${NavigationItem.Citas.route}?motivo=$encodedMotivo")
-                        },
-                        modifier = Modifier.align(Alignment.End)
-                    ) {
-                        Text("Agendar Cita")
+                scope.launch {
+                    try {
+                        val api = RetrofitClient.authed(context).create(PrediagnosticoApi::class.java)
+                        val r = api.predi(PrediRequest(sintomas, especie.ifBlank { null }, edad.ifBlank { null }, sexo.ifBlank { null }))
+                        val motivo = URLEncoder.encode(r.recomendaciones, StandardCharsets.UTF_8.toString())
+                        navController.navigate("${NavigationItem.Citas.route}?motivo=$motivo")
+                    } catch (_: Exception) {
+                        Toast.makeText(context, "Error en prediagnóstico", Toast.LENGTH_SHORT).show()
                     }
                 }
-            }
-        }
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) { Text("Generar y Agendar") }
     }
 }

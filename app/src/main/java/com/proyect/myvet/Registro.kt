@@ -12,29 +12,40 @@ import androidx.navigation.NavController
 import com.proyect.myvet.auth.AuthViewModel
 
 @Composable
-fun IniciosesionScreen(navController: NavController) {
+fun RegistroScreen(navController: NavController) {
     val context = LocalContext.current
     val vm: AuthViewModel = viewModel()
+
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var nombre by remember { mutableStateOf("") }
+    var role by remember { mutableStateOf("dueno") } // o "veterinario"
 
     Column(Modifier.fillMaxSize().padding(16.dp)) {
-        Text("Iniciar sesión", style = MaterialTheme.typography.titleLarge)
+        Text("Registro", style = MaterialTheme.typography.titleLarge)
         Spacer(Modifier.height(8.dp))
         OutlinedTextField(email, { email = it }, label = { Text("Email") }, modifier = Modifier.fillMaxWidth())
         Spacer(Modifier.height(8.dp))
         OutlinedTextField(password, { password = it }, label = { Text("Contraseña") }, modifier = Modifier.fillMaxWidth())
+        Spacer(Modifier.height(8.dp))
+        OutlinedTextField(nombre, { nombre = it }, label = { Text("Nombre") }, modifier = Modifier.fillMaxWidth())
+        Spacer(Modifier.height(8.dp))
+        Row {
+            RadioButton(selected = role == "dueno", onClick = { role = "dueno" })
+            Text("Dueño")
+            Spacer(Modifier.width(12.dp))
+            RadioButton(selected = role == "veterinario", onClick = { role = "veterinario" })
+            Text("Veterinario")
+        }
         Spacer(Modifier.height(16.dp))
         Button(
             onClick = {
-                vm.login(email, password,
-                    onSuccess = { Toast.makeText(context, "Bienvenido", Toast.LENGTH_SHORT).show() },
+                vm.register(email, password, role, nombre,
+                    onSuccess = { Toast.makeText(context, "Cuenta creada", Toast.LENGTH_SHORT).show() },
                     onError = { Toast.makeText(context, it, Toast.LENGTH_SHORT).show() }
                 )
             },
             modifier = Modifier.fillMaxWidth()
-        ) { Text("Ingresar") }
-
-        TextButton(onClick = { navController.navigate("register_screen") }) { Text("Crear cuenta") }
+        ) { Text("Registrarme") }
     }
 }
