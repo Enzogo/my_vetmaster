@@ -8,9 +8,6 @@ android {
     namespace = "com.proyect.myvet"
     compileSdk = 36
 
-    // Nota: quitamos composeOptions para evitar el warning @Incubating y
-    // dejamos que el plugin Kotlin Compose gestione el Compose Compiler.
-
     defaultConfig {
         applicationId = "com.proyect.myvet"
         minSdk = 24
@@ -32,15 +29,22 @@ android {
             )
         }
     }
+
     compileOptions {
+        // Mantén Java 11 (coherente con tu configuración)
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
-    kotlinOptions { jvmTarget = "11" }
+    kotlinOptions {
+        jvmTarget = "11"
+    }
+
     buildFeatures {
         compose = true
         viewBinding = true
     }
+
+    // La versión de build tools puede omitirse; si la de tu SDK es 35.0.0, mantén la línea:
     buildToolsVersion = "35.0.0"
 }
 
@@ -49,19 +53,17 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
 
-    // BOM de Compose
+    // Compose BOM
     implementation(platform(libs.androidx.compose.bom))
 
-    // UI de Compose
+    // UI Compose
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
-
-    // Foundation (Row/Column/Spacer/selectable)
     implementation(libs.androidx.foundation)
 
-    // Lifecycle ViewModel + Compose (viewModelScope y viewModel())
+    // ViewModel + Compose
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
 
@@ -78,6 +80,12 @@ dependencies {
     // Coroutines
     implementation(libs.kotlinx.coroutines.android)
 
+    // Íconos extendidos para tabs
+    implementation("androidx.compose.material:material-icons-extended-android:1.6.7")
+
+    // Gson (lo usamos para serializar/deserializar en navegación)
+    implementation("com.google.code.gson:gson:2.10.1")
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -85,7 +93,4 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
-
-    implementation("com.google.code.gson:gson:2.10.1")
-    implementation("androidx.compose.material:material-icons-extended-android:1.6.7")
 }

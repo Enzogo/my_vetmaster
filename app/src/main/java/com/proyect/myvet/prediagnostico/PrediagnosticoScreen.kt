@@ -15,7 +15,6 @@ import com.proyect.myvet.network.RetrofitClient
 import kotlinx.coroutines.launch
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
-import kotlin.jvm.java
 
 @Composable
 fun PrediagnosticoScreen(navController: NavController) {

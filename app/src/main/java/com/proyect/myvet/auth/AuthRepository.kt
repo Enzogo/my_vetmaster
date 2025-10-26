@@ -21,7 +21,7 @@ class AuthRepository(private val context: Context) {
     suspend fun login(email: String, password: String): Result<Unit> = withContext(Dispatchers.IO) {
         try {
             val resp = api.login(LoginRequest(email, password))
-            if (!resp.isSuccessful || resp.body() == null) return@withContext Result.failure(Exception("Login falló"))
+            if (!resp.isSuccessful || resp.body() == null) return@withContext Result.failure(Exception("Credenciales inválidas"))
             val body = resp.body()!!
             prefs.edit()
                 .putString("token", body.token)

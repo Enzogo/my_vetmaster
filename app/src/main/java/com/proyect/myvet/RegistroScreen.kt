@@ -7,19 +7,18 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.proyect.myvet.auth.AuthViewModel
+import com.proyect.myvet.auth.LocalAuthViewModel
 
 @Composable
 fun RegistroScreen(navController: NavController) {
     val context = LocalContext.current
-    val vm: AuthViewModel = viewModel()
+    val vm = LocalAuthViewModel.current
 
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var nombre by remember { mutableStateOf("") }
-    var role by remember { mutableStateOf("dueno") } // o "veterinario"
+    var role by remember { mutableStateOf("dueno") }
 
     Column(Modifier.fillMaxSize().padding(16.dp)) {
         Text("Registro", style = MaterialTheme.typography.titleLarge)

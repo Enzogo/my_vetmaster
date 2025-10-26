@@ -3,6 +3,7 @@ package com.proyect.myvet
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -11,10 +12,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.proyect.myvet.auth.AuthViewModel
-import com.proyect.myvet.citas.CitasScreen
-import com.proyect.myvet.mascotas.GestionMascotasScreen
-import com.proyect.myvet.mascotas.RegistrarMascotaScreen
-import com.proyect.myvet.perfil.EditarPerfilDuenoScreen
+import com.proyect.myvet.auth.LocalAuthViewModel
 import com.proyect.myvet.ui.theme.MyVetTheme
 
 class MainActivity : ComponentActivity() {
@@ -22,45 +20,33 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             MyVetTheme {
-                val navController = rememberNavController()
                 val authVM: AuthViewModel = viewModel()
                 val authState by authVM.state.collectAsState()
+                val navController = rememberNavController()
 
-                // Forzamos validar al inicio para evitar tokens “fantasma”
-                LaunchedEffect(Unit) { authVM.validateSession() }
+                CompositionLocalProvider(LocalAuthViewModel provides authVM) {
+                    LaunchedEffect(Unit) { authVM.validateSession() }
 
-                val startDestination = "auth_screen"
+                    NavHost(navController = navController, startDestination = "auth_screen") {
+                        composable("auth_screen") { InicioSesionScreen(navController) }
+                        composable("register_screen") { RegistroScreen(navController) }
+                        composable("app") { MainScreen() }
+                    }
 
-                NavHost(navController = navController, startDestination = startDestination) {
-                    composable("auth_screen") { IniciosesionScreen(navController) }
-                    composable(NavigationItem.Home.route) { MainScreen() }
-                    composable("editar_perfil") { EditarPerfilDuenoScreen(navController) }
-                    composable("registrar_mascota") { RegistrarMascotaScreen(navController) }
-                    composable("gestion_mascotas") { GestionMascotasScreen(navController) }
-                    composable(NavigationItem.Citas.route) { CitasScreen(navController) }
-                }
-
-                // Si inicia sesión, enviamos al destino según rol
-                LaunchedEffect(authState.isLoggedIn, authState.role) {
-                    if (authState.isLoggedIn) {
-                        val dest = if (authState.role == "veterinario") {
-                            NavigationItem.Citas.route // veterinario
-                        } else {
-                            NavigationItem.Home.route  // dueño
-                        }
-                        navController.navigate(dest) {
-                            popUpTo("auth_screen") { inclusive = true }
-                            launchSingleTop = true
+                    LaunchedEffect(authState.isLoggedIn, authState.role) {
+                        if (authState.isLoggedIn) {
+                            navController.navigate("app") {
+                                popUpTo("auth_screen") { inclusive = true }
+                                launchSingleTop = true
+                            }
                         }
                     }
-                }
-
-                // Si cierra sesión o token inválido → volver al login y limpiar backstack
-                LaunchedEffect(authState.isLoggedIn) {
-                    if (!authState.isLoggedIn) {
-                        navController.navigate("auth_screen") {
-                            popUpTo(0)
-                            launchSingleTop = true
+                    LaunchedEffect(authState.isLoggedIn) {
+                        if (!authState.isLoggedIn) {
+                            navController.navigate("auth_screen") {
+                                popUpTo(0)
+                                launchSingleTop = true
+                            }
                         }
                     }
                 }

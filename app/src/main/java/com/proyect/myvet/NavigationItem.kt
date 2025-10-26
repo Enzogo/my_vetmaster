@@ -1,11 +1,21 @@
 package com.proyect.myvet
 
-import androidx.annotation.DrawableRes
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.filled.MedicalServices
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.ui.graphics.vector.ImageVector
 
-sealed class NavigationItem(val route: String, @DrawableRes val icon: Int, val title: String) {
-    object Home : NavigationItem("home", R.drawable.logo_myvet, "Inicio")
-    object Citas : NavigationItem("citas", R.drawable.citas, "Citas")
-    object Prediagnostico : NavigationItem("prediagnostico", R.drawable.ic_launcher_foreground, "Pre-diagnóstico")
-    object Historial : NavigationItem("historial", R.drawable.historial, "Historial")
-    object Perfil : NavigationItem("perfil", R.drawable.perfil , "Perfil")
+sealed class NavigationItem(val route: String, val title: String, val icon: ImageVector) {
+    // Dueño
+    data object Home : NavigationItem("home", "Inicio", Icons.Filled.Home)
+    data object Citas : NavigationItem("citas", "Citas", Icons.Filled.CalendarToday)
+    data object Prediagnostico : NavigationItem("prediagnostico", "IA", Icons.Filled.MedicalServices)
+    data object Historial : NavigationItem("historial", "Historial", Icons.Filled.List)
+    data object Perfil : NavigationItem("perfil", "Perfil", Icons.Filled.Person)
+
+    // Veterinario
+    data object VetCitas : NavigationItem("vet_citas", "Citas", Icons.Filled.CalendarToday)
 }

@@ -1,6 +1,5 @@
 package com.proyect.myvet.citas
 
-import android.Manifest
 import android.annotation.SuppressLint
 import android.app.AlarmManager
 import android.app.DatePickerDialog
@@ -8,12 +7,9 @@ import android.app.PendingIntent
 import android.app.TimePickerDialog
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.os.Build
 import android.provider.Settings
 import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -22,7 +18,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
 import com.proyect.myvet.NavigationItem
 import com.proyect.myvet.Notificacion
@@ -36,7 +31,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
 import java.net.URLDecoder
-import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.util.Calendar
 
@@ -45,33 +39,30 @@ import java.util.Calendar
 @Composable
 fun CitasScreen(
     navController: NavController,
-    motivoInicial: String? = null // reintroducido para prellenar el motivo desde prediagnóstico
+    motivoInicial: String? = null
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
-    // Decodificar el motivo inicial (si vino por query param)
     val motivoPrefill = remember(motivoInicial) {
         motivoInicial?.let { URLDecoder.decode(it, StandardCharsets.UTF_8.name()) } ?: ""
     }
 
-    // Estado UI
     var motivoCita by remember { mutableStateOf(motivoPrefill) }
     var selectedDateText by remember { mutableStateOf("") }
     var selectedTimeText by remember { mutableStateOf("") }
 
-    // Mascotas desde backend (IDs reales de Mongo)
     var mascotas by remember { mutableStateOf<List<MascotaDto>>(emptyList()) }
     var mascotaSeleccionadaId by remember { mutableStateOf<String?>(null) }
     var mascotasLoading by remember { mutableStateOf(false) }
 
-    // Cargar mascotas al abrir
+    // Cargar mascotas
     LaunchedEffect(Unit) {
         mascotasLoading = true
         try {
             val api = RetrofitClient.authed(context).create(OwnerApi::class.java)
             mascotas = api.getMyMascotas()
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             Toast.makeText(context, "No se pudieron cargar mascotas", Toast.LENGTH_SHORT).show()
         } finally {
             mascotasLoading = false
@@ -79,10 +70,6 @@ fun CitasScreen(
     }
 
     val calendar = Calendar.getInstance()
-
-    val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
-        if (!it) Toast.makeText(context, "Permiso notificaciones denegado", Toast.LENGTH_SHORT).show()
-    }
 
     val datePickerDialog = DatePickerDialog(
         context,
@@ -117,12 +104,12 @@ fun CitasScreen(
 
         Spacer(Modifier.height(12.dp))
 
-        // Selector de mascota (usa IDs reales)
         var expanded by remember { mutableStateOf(false) }
         ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
             OutlinedTextField(
                 readOnly = true,
-                value = mascotas.firstOrNull { it.id == mascotaSeleccionadaId }?.nombre ?: if (mascotasLoading) "Cargando mascotas..." else "Seleccionar Mascota",
+                value = mascotas.firstOrNull { it.id == mascotaSeleccionadaId }?.nombre
+                    ?: if (mascotasLoading) "Cargando mascotas..." else "Seleccionar Mascota",
                 onValueChange = {},
                 label = { Text("Mascota") },
                 modifier = Modifier
@@ -176,25 +163,26 @@ fun CitasScreen(
                         val api = RetrofitClient.authed(context).create(OwnerApi::class.java)
                         val created = api.createCita(CitaCreateRequest(fechaIso, motivoCita, mascotaId))
 
-                        // Programar recordatorio local
+                        // Recordatorio local
                         scheduleExactAlarm(context, calendar.timeInMillis, created.motivo ?: motivoCita)
 
-                        // Historial local opcional
-                        HistorialManager.guardarCita(
-                            context,
-                            HistorialCita(
-                                System.currentTimeMillis(),
-                                "(id ${created.mascotaId ?: mascotaId})",
-                                "",
-                                created.motivo ?: motivoCita,
-                                selectedDateText,
-                                selectedTimeText
+                        // Historial local (si existe en tu app)
+                        try {
+                            HistorialManager.guardarCita(
+                                context,
+                                HistorialCita(
+                                    System.currentTimeMillis(),
+                                    "(id ${created.mascotaId ?: mascotaId})",
+                                    "",
+                                    created.motivo ?: motivoCita,
+                                    selectedDateText,
+                                    selectedTimeText
+                                )
                             )
-                        )
+                        } catch (_: Throwable) { /* ignora si no existe */ }
 
                         launch(Dispatchers.Main) {
                             Toast.makeText(context, "Cita guardada", Toast.LENGTH_SHORT).show()
-                            // Permanecer en la app: ir a la pestaña Citas
                             navController.navigate(NavigationItem.Citas.route)
                         }
                     } catch (e: Exception) {
@@ -239,6 +227,6 @@ private fun scheduleExactAlarm(
     try {
         alarmManager.setExact(AlarmManager.RTC_WAKEUP, timeInMillis, pendingIntent)
     } catch (_: Exception) {
-        // No romper UX si falla programar alarma
+        // no rompas UX si falla
     }
 }

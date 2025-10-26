@@ -2,11 +2,36 @@ package com.proyect.myvet.network
 
 import retrofit2.http.*
 
-data class MascotaDto(val id: String?, val nombre: String?, val especie: String?, val raza: String?)
-data class MascotaCreateRequest(val nombre: String, val especie: String, val raza: String?, val fechaNacimiento: String?, val sexo: String?)
-data class MascotaUpdateRequest(val nombre: String? = null, val especie: String? = null, val raza: String? = null, val fechaNacimiento: String? = null, val sexo: String? = null)
+data class MascotaDto(
+    val id: String?,
+    val nombre: String?,
+    val especie: String?,
+    val raza: String?
+)
 
-data class CitaDto(val id: String?, val fechaIso: String?, val motivo: String?, val mascotaId: String?, val estado: String? = null)
+data class MascotaCreateRequest(
+    val nombre: String,
+    val especie: String,
+    val raza: String?,
+    val fechaNacimiento: String?,
+    val sexo: String?
+)
+
+data class MascotaUpdateRequest(
+    val nombre: String? = null,
+    val especie: String? = null,
+    val raza: String? = null,
+    val fechaNacimiento: String? = null,
+    val sexo: String? = null
+)
+
+data class CitaDto(
+    val id: String?,
+    val fechaIso: String?,
+    val motivo: String?,
+    val mascotaId: String?,
+    val estado: String? = null
+)
 data class CitaCreateRequest(val fechaIso: String, val motivo: String, val mascotaId: String)
 data class CitaUpdateRequest(val fechaIso: String? = null, val motivo: String? = null, val mascotaId: String? = null)
 
