@@ -13,6 +13,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.proyect.myvet.auth.AuthViewModel
 import com.proyect.myvet.owner.OwnerViewModel
+import retrofit2.HttpException
 
 @Composable
 fun GestionMascotasScreen(navController: NavController) {
@@ -73,7 +74,7 @@ fun GestionMascotasScreen(navController: NavController) {
                                     null,
                                     onDone = { Toast.makeText(context, "Mascota actualizada", Toast.LENGTH_SHORT).show() },
                                     onError = { err ->
-                                        val code = (err as? retrofit2.HttpException)?.code()
+                                        val code = (err as? HttpException)?.code()
                                         if (code == 401) {
                                             Toast.makeText(context, "Sesión expirada", Toast.LENGTH_SHORT).show()
                                             authVM.logout()
@@ -89,7 +90,7 @@ fun GestionMascotasScreen(navController: NavController) {
                                     m.id ?: "",
                                     onDone = { Toast.makeText(context, "Mascota eliminada", Toast.LENGTH_SHORT).show() },
                                     onError = { err ->
-                                        val code = (err as? retrofit2.HttpException)?.code()
+                                        val code = (err as? HttpException)?.code()
                                         if (code == 401) {
                                             Toast.makeText(context, "Sesión expirada", Toast.LENGTH_SHORT).show()
                                             authVM.logout()
