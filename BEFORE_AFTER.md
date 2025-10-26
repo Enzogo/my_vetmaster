@@ -60,6 +60,7 @@ TextButton(onClick = { navController.navigateUp() }) {
 ```kotlin
 // NavigationItem.kt
 object Feedback : NavigationItem("feedback", R.drawable.ic_launcher_foreground, "Feedback")
+// NOTE: Using generic icon temporarily. For production, create a dedicated feedback/star icon.
 
 // FeedbackApi.kt (NEW)
 interface FeedbackApi {
@@ -250,11 +251,12 @@ fun CitasScreen(
 ## 📊 Metrics
 
 ### Code Changes
-- **Files Modified**: 10
-- **Files Created**: 3
-- **Lines Added**: ~630
-- **Lines Removed**: ~47
-- **Net Change**: +583 lines
+- **Files Modified**: 10 code files
+- **Files Created**: 3 (2 code + 1 doc initially, then 3 more docs)
+- **Lines Added**: 1,214 lines (including documentation)
+- **Lines Removed**: 56 lines
+- **Net Change**: +1,158 lines total
+- **Code-only Changes**: ~630 lines (excluding markdown docs)
 
 ### Feature Coverage
 - **Authentication**: 100% ✅
@@ -375,7 +377,8 @@ The My Vet Android app has been successfully stabilized and enhanced:
 ✅ **Comprehensive documentation**  
 ✅ **Production-ready**  
 
-The app is now ready for end-to-end testing with the backend at `http://10.0.2.2:4000/`
+The app is now ready for end-to-end testing with the backend at `http://10.0.2.2:4000/`  
+**Note**: This IP address (`10.0.2.2`) is specific to Android emulator environments. For physical devices, use the actual backend server IP address or domain name.
 
 ---
 
