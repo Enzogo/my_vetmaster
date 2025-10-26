@@ -33,6 +33,7 @@ class MainActivity : ComponentActivity() {
 
                 NavHost(navController = navController, startDestination = startDestination) {
                     composable("auth_screen") { IniciosesionScreen(navController) }
+                    composable("register_screen") { RegistroScreen(navController) }
                     composable(NavigationItem.Home.route) { MainScreen() }
                     composable("editar_perfil") { EditarPerfilDuenoScreen(navController) }
                     composable("registrar_mascota") { RegistrarMascotaScreen(navController) }

@@ -16,6 +16,7 @@ import androidx.navigation.compose.*
 import androidx.navigation.navArgument
 import com.google.gson.Gson
 import com.proyect.myvet.citas.CitasScreen
+import com.proyect.myvet.feedback.FeedbackScreen
 import com.proyect.myvet.historial.DetalleHistorialScreen
 import com.proyect.myvet.historial.HistorialCita
 import com.proyect.myvet.historial.HistorialScreen
@@ -41,6 +42,7 @@ fun MainScreen() {
                     NavigationItem.Citas,
                     NavigationItem.Prediagnostico,
                     NavigationItem.Historial,
+                    NavigationItem.Feedback,
                     NavigationItem.Perfil
                 ).forEach { item ->
                     val isSelected = currentRoute?.startsWith(item.route) == true
@@ -72,6 +74,7 @@ fun MainScreen() {
             }
             composable(NavigationItem.Prediagnostico.route) { PrediagnosticoScreen(navController = navController) }
             composable(NavigationItem.Historial.route) { HistorialScreen(navController = navController) }
+            composable(NavigationItem.Feedback.route) { FeedbackScreen(navController = navController) }
             composable(
                 route = "detalle_historial/{citaJson}",
                 arguments = listOf(navArgument("citaJson") { type = NavType.StringType })

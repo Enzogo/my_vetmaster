@@ -41,11 +41,13 @@ fun RegistroScreen(navController: NavController) {
         Button(
             onClick = {
                 vm.register(email, password, role, nombre,
-                    onSuccess = { Toast.makeText(context, "Cuenta creada", Toast.LENGTH_SHORT).show() },
+                    onSuccess = { Toast.makeText(context, "Cuenta creada, bienvenido!", Toast.LENGTH_SHORT).show() },
                     onError = { Toast.makeText(context, it, Toast.LENGTH_SHORT).show() }
                 )
             },
             modifier = Modifier.fillMaxWidth()
         ) { Text("Registrarme") }
+
+        TextButton(onClick = { navController.navigateUp() }) { Text("Ya tengo cuenta") }
     }
 }
