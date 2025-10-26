@@ -7,5 +7,6 @@ sealed class NavigationItem(val route: String, @DrawableRes val icon: Int, val t
     object Citas : NavigationItem("citas", R.drawable.citas, "Citas")
     object Prediagnostico : NavigationItem("prediagnostico", R.drawable.ic_launcher_foreground, "Pre-diagnóstico")
     object Historial : NavigationItem("historial", R.drawable.historial, "Historial")
+    object Feedback : NavigationItem("feedback", R.drawable.ic_launcher_foreground, "Feedback")
     object Perfil : NavigationItem("perfil", R.drawable.perfil , "Perfil")
 }
