@@ -28,6 +28,7 @@ import com.proyect.myvet.network.FeedbackApi
 import com.proyect.myvet.network.FeedbackCreateRequest
 import com.proyect.myvet.network.RetrofitClient
 import com.proyect.myvet.prediagnostico.PrediagnosticoScreen
+import com.proyect.myvet.vet.VetCitasScreen
 import com.proyect.myvet.vet.VetPerfilScreen
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
@@ -42,7 +43,7 @@ fun MainScreen() {
 
     val navController = rememberNavController()
     val tabs = if (isVet) {
-        listOf(NavigationItem.VetCitas, NavigationItem.Perfil)
+        listOf(NavigationItem.VetCitas, NavigationItem.VetPerfil)
     } else {
         listOf(NavigationItem.Home, NavigationItem.Citas, NavigationItem.Prediagnostico, NavigationItem.Historial, NavigationItem.Perfil)
     }
@@ -73,9 +74,8 @@ fun MainScreen() {
     ) { innerPadding ->
         NavHost(navController, startDestination = startRoute, modifier = Modifier.padding(innerPadding)) {
             if (isVet) {
-                composable(NavigationItem.VetCitas.route) { VetPerfilScreen(navController = navController) }
-                // Perfil de veterinario -> muestra sus datos, con Editar/Cerrar sesión
-                composable(NavigationItem.Perfil.route) { VetPerfilScreen(navController = navController) }
+                composable(NavigationItem.VetCitas.route) { VetCitasScreen() }
+                composable(NavigationItem.VetPerfil.route) { VetPerfilScreen(navController = navController) }
                 composable("editar_perfil") { com.proyect.myvet.perfil.EditarPerfilScreen(navController = navController) }
             } else {
                 composable(NavigationItem.Home.route) { InicioDuenoContent(navController = navController) }
@@ -125,7 +125,6 @@ private fun InicioDuenoContent(navController: androidx.navigation.NavController)
             val s = api.summary()
             avg = s.avg; count = s.count
         } catch (_: Exception) {
-            // sin bloquear UI
         } finally {
             loadingSummary = false
         }
@@ -212,7 +211,6 @@ private fun InicioDuenoContent(navController: androidx.navigation.NavController)
                                         Toast.makeText(context, "¡Gracias por tu feedback!", Toast.LENGTH_SHORT).show()
                                         rating = 0
                                         sugerencia = TextFieldValue("")
-                                        // refrescar resumen
                                         try {
                                             val s = api.summary()
                                             avg = s.avg; count = s.count

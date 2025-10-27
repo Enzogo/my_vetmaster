@@ -18,4 +18,5 @@ sealed class NavigationItem(val route: String, val title: String, val icon: Imag
 
     // Veterinario
     data object VetCitas : NavigationItem("vet_citas", "Citas", Icons.Filled.CalendarToday)
+    data object VetPerfil : NavigationItem("vet_perfil", "Mi Perfil", Icons.Filled.Person)
 }
