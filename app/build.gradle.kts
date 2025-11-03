@@ -85,6 +85,7 @@ dependencies {
 
     // Gson (lo usamos para serializar/deserializar en navegación)
     implementation("com.google.code.gson:gson:2.10.1")
+    implementation(libs.material)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

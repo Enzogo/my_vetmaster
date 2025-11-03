@@ -1,18 +1,31 @@
 package com.proyect.myvet
 
 import android.widget.Toast
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.StarBorder
+import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.Psychology
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
 import androidx.navigation.compose.*
@@ -50,6 +63,7 @@ fun MainScreen() {
     val startRoute = if (isVet) NavigationItem.VetCitas.route else NavigationItem.Home.route
 
     Scaffold(
+        containerColor = Color(0xFFF6F3ED),
         bottomBar = {
             val navBackStackEntry by navController.currentBackStackEntryAsState()
             val currentRoute = navBackStackEntry?.destination?.route
@@ -95,7 +109,6 @@ fun MainScreen() {
                     val cita = Gson().fromJson(citaJson, HistorialCita::class.java)
                     DetalleHistorialScreen(navController = navController, cita = cita)
                 }
-                // Perfil de dueño sigue como antes
                 composable(NavigationItem.Perfil.route) { com.proyect.myvet.perfil.PerfilScreen(navController = navController) }
                 composable("gestion_mascotas") { com.proyect.myvet.perfil.GestionMascotasScreen(navController = navController) }
                 composable(
@@ -109,7 +122,7 @@ fun MainScreen() {
 }
 
 @Composable
-private fun InicioDuenoContent(navController: androidx.navigation.NavController) {
+private fun InicioDuenoContent(navController: NavController) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var rating by remember { mutableStateOf(0) }
@@ -131,17 +144,115 @@ private fun InicioDuenoContent(navController: androidx.navigation.NavController)
     }
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
         contentPadding = PaddingValues(bottom = 24.dp)
     ) {
+        // 1) Tarjeta de bienvenida
         item {
-            Box(Modifier.fillMaxWidth().padding(vertical = 24.dp), contentAlignment = Alignment.Center) {
-                Text("Bienvenido a My Vet", style = MaterialTheme.typography.titleLarge)
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(140.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF7DA581)),
+                shape = RoundedCornerShape(16.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            ) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("¡Bienvenido a MyVet!", style = MaterialTheme.typography.headlineSmall, color = Color.White)
+                }
             }
         }
-        // Resumen de calificación
+
+        item { Spacer(Modifier.height(16.dp)) }
+
+        // 2) Burbujas 2x2 (Citas, Perfil, IA, Historial)
         item {
-            Card(Modifier.fillMaxWidth()) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFF6F3ED)),
+                shape = RoundedCornerShape(16.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
+                Column(Modifier.fillMaxWidth().padding(16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        BubbleButton(
+                            title = "Citas",
+                            color = Color(0xFF69C27C),
+                            onClick = { navController.safeNavigate(NavigationItem.Citas.route) },
+                            icon = { Icon(imageVector = Icons.Outlined.CalendarMonth, contentDescription = "Citas", tint = Color.White) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        BubbleButton(
+                            title = "Perfil",
+                            color = Color(0xFFFA8C59),
+                            onClick = { navController.safeNavigate(NavigationItem.Perfil.route) },
+                            icon = { Icon(imageVector = Icons.Outlined.Person, contentDescription = "Perfil", tint = Color.White) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    Spacer(Modifier.height(16.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        BubbleButton(
+                            title = "IA",
+                            color = Color(0xFF7D7AEF),
+                            onClick = { navController.safeNavigate(NavigationItem.Prediagnostico.route) },
+                            icon = { Icon(imageVector = Icons.Outlined.Psychology, contentDescription = "IA", tint = Color.White) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        BubbleButton(
+                            title = "Historial",
+                            color = Color(0xFF5CB4E7),
+                            onClick = { navController.safeNavigate(NavigationItem.Historial.route) },
+                            icon = { Icon(imageVector = Icons.Outlined.History, contentDescription = "Historial", tint = Color.White) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+            }
+        }
+
+        item { Spacer(Modifier.height(16.dp)) }
+
+        // 3) Registrar mascota (BLANCO)
+        item {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(1.dp, Color(0x14000000), RoundedCornerShape(16.dp)),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                shape = RoundedCornerShape(16.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
+                Column(Modifier.padding(16.dp)) {
+                    Text("¿Eres nuevo? Registra tu mascota", style = MaterialTheme.typography.titleMedium)
+                    Spacer(Modifier.height(8.dp))
+                    Button(onClick = { navController.navigate("registrar_mascota") }) {
+                        Text("Registrar mascota")
+                    }
+                }
+            }
+        }
+
+        item { Spacer(Modifier.height(16.dp)) }
+
+        // 4) Clasificación de la app (BLANCO)
+        item {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(1.dp, Color(0x14000000), RoundedCornerShape(16.dp)),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                shape = RoundedCornerShape(16.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
                 Column(Modifier.padding(16.dp)) {
                     Text("Clasificación de la app", style = MaterialTheme.typography.titleMedium)
                     Spacer(Modifier.height(8.dp))
@@ -160,23 +271,19 @@ private fun InicioDuenoContent(navController: androidx.navigation.NavController)
                 }
             }
         }
-        item { Spacer(Modifier.height(16.dp)) }
-        // Acceso rápido: registrar mascota
-        item {
-            Card(Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(16.dp)) {
-                    Text("¿Eres nuevo? Registra tu mascota", style = MaterialTheme.typography.titleMedium)
-                    Spacer(Modifier.height(8.dp))
-                    Button(onClick = { navController.navigate("registrar_mascota") }) {
-                        Text("Registrar mascota")
-                    }
-                }
-            }
-        }
+
         item { Spacer(Modifier.height(24.dp)) }
-        // Enviar feedback
+
+        // 5) Enviar feedback (BLANCO)
         item {
-            Card(Modifier.fillMaxWidth()) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(1.dp, Color(0x14000000), RoundedCornerShape(16.dp)),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                shape = RoundedCornerShape(16.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
                 Column(Modifier.padding(16.dp)) {
                     Text("Tu opinión nos ayuda", style = MaterialTheme.typography.titleMedium)
                     Spacer(Modifier.height(8.dp))
@@ -246,4 +353,40 @@ private fun InicioDuenoContent(navController: androidx.navigation.NavController)
             }
         }
     }
+}
+
+@Composable
+private fun BubbleButton(
+    title: String,
+    color: Color,
+    onClick: () -> Unit,
+    icon: @Composable () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Box(
+            modifier = Modifier
+                .size(96.dp)
+                .clip(CircleShape)
+                .background(color)
+                .clickable { onClick() },
+            contentAlignment = Alignment.Center
+        ) {
+            icon()
+        }
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyMedium,
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
+private fun NavController.safeNavigate(route: String) {
+    val current = this.currentDestination?.route
+    if (current != route) this.navigate(route)
 }
