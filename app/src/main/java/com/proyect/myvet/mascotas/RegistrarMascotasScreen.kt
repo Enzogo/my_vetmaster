@@ -37,6 +37,8 @@ fun RegistrarMascotaScreen(
     var nombre by remember { mutableStateOf("") }
     var especie by remember { mutableStateOf("") }
     var raza by remember { mutableStateOf("") }
+    var edad by remember { mutableStateOf("") }
+    var sexo by remember { mutableStateOf("") }
 
     // Si en el futuro quieres precargar datos cuando sea edición, puedes usar mascotaId aquí.
     LaunchedEffect(mascotaId) { /* no-op por ahora */ }
@@ -53,7 +55,11 @@ fun RegistrarMascotaScreen(
             value = nombre,
             onValueChange = { nombre = it },
             label = { Text("Nombre") },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                focusedTextColor = androidx.compose.ui.graphics.Color.Black,
+                unfocusedTextColor = androidx.compose.ui.graphics.Color.Black
+            )
         )
         Spacer(Modifier.height(8.dp))
 
@@ -61,7 +67,11 @@ fun RegistrarMascotaScreen(
             value = especie,
             onValueChange = { especie = it },
             label = { Text("Especie (Perro, Gato, etc.)") },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                focusedTextColor = androidx.compose.ui.graphics.Color.Black,
+                unfocusedTextColor = androidx.compose.ui.graphics.Color.Black
+            )
         )
         Spacer(Modifier.height(8.dp))
 
@@ -69,7 +79,35 @@ fun RegistrarMascotaScreen(
             value = raza,
             onValueChange = { raza = it },
             label = { Text("Raza (opcional)") },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                focusedTextColor = androidx.compose.ui.graphics.Color.Black,
+                unfocusedTextColor = androidx.compose.ui.graphics.Color.Black
+            )
+        )
+        Spacer(Modifier.height(8.dp))
+
+        OutlinedTextField(
+            value = edad,
+            onValueChange = { edad = it },
+            label = { Text("Edad (Ej: 2 años, 6 meses)") },
+            modifier = Modifier.fillMaxWidth(),
+            colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                focusedTextColor = androidx.compose.ui.graphics.Color.Black,
+                unfocusedTextColor = androidx.compose.ui.graphics.Color.Black
+            )
+        )
+        Spacer(Modifier.height(8.dp))
+
+        OutlinedTextField(
+            value = sexo,
+            onValueChange = { sexo = it },
+            label = { Text("Sexo (Macho/Hembra)") },
+            modifier = Modifier.fillMaxWidth(),
+            colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                focusedTextColor = androidx.compose.ui.graphics.Color.Black,
+                unfocusedTextColor = androidx.compose.ui.graphics.Color.Black
+            )
         )
         Spacer(Modifier.height(16.dp))
 
@@ -87,8 +125,8 @@ fun RegistrarMascotaScreen(
                                 nombre = nombre.trim(),
                                 especie = especie.trim(),
                                 raza = raza.ifBlank { null },
-                                fechaNacimiento = null,
-                                sexo = null
+                                fechaNacimiento = edad.ifBlank { null },
+                                sexo = sexo.ifBlank { null }
                             )
                         )
                         launch(Dispatchers.Main) {

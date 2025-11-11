@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
@@ -23,11 +24,38 @@ fun RegistroScreen(navController: NavController) {
     Column(Modifier.fillMaxSize().padding(16.dp)) {
         Text("Registro", style = MaterialTheme.typography.titleLarge)
         Spacer(Modifier.height(8.dp))
-        OutlinedTextField(email, { email = it }, label = { Text("Email") }, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(
+            email,
+            { email = it },
+            label = { Text("Email") },
+            modifier = Modifier.fillMaxWidth(),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = Color.Black,
+                unfocusedTextColor = Color.Black
+            )
+        )
         Spacer(Modifier.height(8.dp))
-        OutlinedTextField(password, { password = it }, label = { Text("Contraseña") }, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(
+            password,
+            { password = it },
+            label = { Text("Contraseña") },
+            modifier = Modifier.fillMaxWidth(),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = Color.Black,
+                unfocusedTextColor = Color.Black
+            )
+        )
         Spacer(Modifier.height(8.dp))
-        OutlinedTextField(nombre, { nombre = it }, label = { Text("Nombre") }, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(
+            nombre,
+            { nombre = it },
+            label = { Text("Nombre") },
+            modifier = Modifier.fillMaxWidth(),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = Color.Black,
+                unfocusedTextColor = Color.Black
+            )
+        )
         Spacer(Modifier.height(8.dp))
         Row {
             RadioButton(selected = role == "dueno", onClick = { role = "dueno" })

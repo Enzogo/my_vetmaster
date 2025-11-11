@@ -114,7 +114,11 @@ fun CitasScreen(
                 label = { Text("Mascota") },
                 modifier = Modifier
                     .menuAnchor()
-                    .fillMaxWidth()
+                    .fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = androidx.compose.ui.graphics.Color.Black,
+                    unfocusedTextColor = androidx.compose.ui.graphics.Color.Black
+                )
             )
             ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                 mascotas.forEach { m ->
@@ -134,7 +138,11 @@ fun CitasScreen(
             value = motivoCita,
             onValueChange = { motivoCita = it },
             label = { Text("Motivo de Cita") },
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = androidx.compose.ui.graphics.Color.Black,
+                unfocusedTextColor = androidx.compose.ui.graphics.Color.Black
+            )
         )
 
         Spacer(Modifier.height(12.dp))

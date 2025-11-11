@@ -50,6 +50,13 @@ fun GestionMascotasScreen(navController: NavController) {
                     Column(Modifier.padding(12.dp)) {
                         Text(m.nombre ?: "(sin nombre)", style = MaterialTheme.typography.titleMedium)
                         Text("${m.especie ?: ""} ${m.raza ?: ""}".trim())
+                        if (m.fechaNacimiento != null || m.sexo != null) {
+                            val detalles = listOfNotNull(
+                                m.fechaNacimiento?.let { "Edad: $it" },
+                                m.sexo?.let { "Sexo: $it" }
+                            ).joinToString(" • ")
+                            Text(detalles, style = MaterialTheme.typography.bodySmall)
+                        }
                         Spacer(Modifier.height(8.dp))
                         Row {
                             Button(onClick = {

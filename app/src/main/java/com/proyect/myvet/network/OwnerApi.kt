@@ -6,7 +6,9 @@ data class MascotaDto(
     val id: String?,
     val nombre: String?,
     val especie: String?,
-    val raza: String?
+    val raza: String?,
+    val fechaNacimiento: String?,
+    val sexo: String?
 )
 
 data class MascotaCreateRequest(

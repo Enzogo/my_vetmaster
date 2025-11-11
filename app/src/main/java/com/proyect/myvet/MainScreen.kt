@@ -63,7 +63,7 @@ fun MainScreen() {
     val startRoute = if (isVet) NavigationItem.VetCitas.route else NavigationItem.Home.route
 
     Scaffold(
-        containerColor = Color(0xFFF6F3ED),
+        containerColor = Color(0xFFF5F1EB),
         bottomBar = {
             val navBackStackEntry by navController.currentBackStackEntryAsState()
             val currentRoute = navBackStackEntry?.destination?.route
@@ -160,7 +160,7 @@ private fun InicioDuenoContent(navController: NavController) {
                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
             ) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("¡Bienvenido a MyVet!", style = MaterialTheme.typography.headlineSmall, color = Color.White)
+                    Text("¡Bienvenido a MyVet!", style = MaterialTheme.typography.headlineSmall, color = Color.Black)
                 }
             }
         }
@@ -171,7 +171,7 @@ private fun InicioDuenoContent(navController: NavController) {
         item {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFF6F3ED)),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F1EB)),
                 shape = RoundedCornerShape(16.dp),
                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
@@ -184,14 +184,14 @@ private fun InicioDuenoContent(navController: NavController) {
                             title = "Citas",
                             color = Color(0xFF69C27C),
                             onClick = { navController.safeNavigate(NavigationItem.Citas.route) },
-                            icon = { Icon(imageVector = Icons.Outlined.CalendarMonth, contentDescription = "Citas", tint = Color.White) },
+                            icon = { Icon(imageVector = Icons.Outlined.CalendarMonth, contentDescription = "Citas", tint = Color.Black) },
                             modifier = Modifier.weight(1f)
                         )
                         BubbleButton(
                             title = "Perfil",
                             color = Color(0xFFFA8C59),
                             onClick = { navController.safeNavigate(NavigationItem.Perfil.route) },
-                            icon = { Icon(imageVector = Icons.Outlined.Person, contentDescription = "Perfil", tint = Color.White) },
+                            icon = { Icon(imageVector = Icons.Outlined.Person, contentDescription = "Perfil", tint = Color.Black) },
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -204,14 +204,14 @@ private fun InicioDuenoContent(navController: NavController) {
                             title = "IA",
                             color = Color(0xFF7D7AEF),
                             onClick = { navController.safeNavigate(NavigationItem.Prediagnostico.route) },
-                            icon = { Icon(imageVector = Icons.Outlined.Psychology, contentDescription = "IA", tint = Color.White) },
+                            icon = { Icon(imageVector = Icons.Outlined.Psychology, contentDescription = "IA", tint = Color.Black) },
                             modifier = Modifier.weight(1f)
                         )
                         BubbleButton(
                             title = "Historial",
                             color = Color(0xFF5CB4E7),
                             onClick = { navController.safeNavigate(NavigationItem.Historial.route) },
-                            icon = { Icon(imageVector = Icons.Outlined.History, contentDescription = "Historial", tint = Color.White) },
+                            icon = { Icon(imageVector = Icons.Outlined.History, contentDescription = "Historial", tint = Color.Black) },
                             modifier = Modifier.weight(1f)
                         )
                     }
