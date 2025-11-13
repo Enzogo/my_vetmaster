@@ -10,14 +10,21 @@ import android.content.Intent
 import android.os.Build
 import android.provider.Settings
 import android.widget.Toast
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.proyect.myvet.NavigationItem
 import com.proyect.myvet.Notificacion
@@ -55,6 +62,17 @@ fun CitasScreen(
     var mascotas by remember { mutableStateOf<List<MascotaDto>>(emptyList()) }
     var mascotaSeleccionadaId by remember { mutableStateOf<String?>(null) }
     var mascotasLoading by remember { mutableStateOf(false) }
+
+    // Colores para campos de texto (texto negro)
+    val textFieldColors = OutlinedTextFieldDefaults.colors(
+        focusedTextColor = Color.Black,
+        unfocusedTextColor = Color.Black,
+        cursorColor = Color.Black,
+        focusedBorderColor = Color(0xFF7DA581),
+        unfocusedBorderColor = Color.Gray,
+        focusedLabelColor = Color(0xFF7DA581),
+        unfocusedLabelColor = Color.Gray
+    )
 
     // Cargar mascotas
     LaunchedEffect(Unit) {
@@ -97,66 +115,201 @@ fun CitasScreen(
     Column(
         Modifier
             .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .background(Color(0xFFF5F1EB))
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp)
     ) {
-        Text("Registrar/Reprogramar Cita", fontSize = 22.sp)
-
-        Spacer(Modifier.height(12.dp))
-
-        var expanded by remember { mutableStateOf(false) }
-        ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
-            OutlinedTextField(
-                readOnly = true,
-                value = mascotas.firstOrNull { it.id == mascotaSeleccionadaId }?.nombre
-                    ?: if (mascotasLoading) "Cargando mascotas..." else "Seleccionar Mascota",
-                onValueChange = {},
-                label = { Text("Mascota") },
+        // Encabezado
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFF7DA581)),
+            shape = RoundedCornerShape(12.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        ) {
+            Row(
                 modifier = Modifier
-                    .menuAnchor()
-                    .fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = androidx.compose.ui.graphics.Color.Black,
-                    unfocusedTextColor = androidx.compose.ui.graphics.Color.Black
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    Icons.Default.CalendarMonth,
+                    contentDescription = null,
+                    tint = Color.Black,
+                    modifier = Modifier.size(32.dp)
                 )
-            )
-            ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                mascotas.forEach { m ->
-                    DropdownMenuItem(
-                        text = { Text(m.nombre ?: "(sin nombre)") },
-                        onClick = {
-                            mascotaSeleccionadaId = m.id
-                            expanded = false
-                        }
+                Spacer(Modifier.width(12.dp))
+                Column {
+                    Text(
+                        "Agendar Cita",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Black
+                    )
+                    Text(
+                        "Programa tu consulta veterinaria",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.Black.copy(alpha = 0.7f)
                     )
                 }
             }
         }
 
-        Spacer(Modifier.height(12.dp))
-        OutlinedTextField(
-            value = motivoCita,
-            onValueChange = { motivoCita = it },
-            label = { Text("Motivo de Cita") },
-            modifier = Modifier.fillMaxWidth(),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedTextColor = androidx.compose.ui.graphics.Color.Black,
-                unfocusedTextColor = androidx.compose.ui.graphics.Color.Black
-            )
-        )
+        Spacer(Modifier.height(16.dp))
 
-        Spacer(Modifier.height(12.dp))
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-            Button(onClick = { datePickerDialog.show() }) {
-                Text(if (selectedDateText.isEmpty()) "Seleccionar Fecha" else selectedDateText)
+        // Selección de mascota
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            shape = RoundedCornerShape(12.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(Modifier.padding(16.dp)) {
+                Text(
+                    "Mascota",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF7DA581)
+                )
+                Spacer(Modifier.height(12.dp))
+
+                var expanded by remember { mutableStateOf(false) }
+                ExposedDropdownMenuBox(
+                    expanded = expanded,
+                    onExpandedChange = { expanded = !expanded }
+                ) {
+                    OutlinedTextField(
+                        readOnly = true,
+                        value = mascotas.firstOrNull { it.id == mascotaSeleccionadaId }?.nombre
+                            ?: if (mascotasLoading) "Cargando mascotas..." else "Seleccionar Mascota",
+                        onValueChange = {},
+                        label = { Text("Mascota") },
+                        leadingIcon = { Icon(Icons.Default.Pets, contentDescription = null) },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                        modifier = Modifier
+                            .menuAnchor()
+                            .fillMaxWidth(),
+                        colors = textFieldColors
+                    )
+                    ExposedDropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
+                    ) {
+                        if (mascotas.isEmpty()) {
+                            DropdownMenuItem(
+                                text = { Text("No hay mascotas registradas") },
+                                onClick = { expanded = false }
+                            )
+                        } else {
+                            mascotas.forEach { m ->
+                                DropdownMenuItem(
+                                    text = { Text(m.nombre ?: "(sin nombre)", color = Color.Black) },
+                                    onClick = {
+                                        mascotaSeleccionadaId = m.id
+                                        expanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
             }
-            Button(onClick = { timePickerDialog.show() }) {
-                Text(if (selectedTimeText.isEmpty()) "Seleccionar Hora" else selectedTimeText)
+        }
+
+        Spacer(Modifier.height(16.dp))
+
+        // Motivo de la cita
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            shape = RoundedCornerShape(12.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(Modifier.padding(16.dp)) {
+                Text(
+                    "Motivo de la Cita",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF7DA581)
+                )
+                Spacer(Modifier.height(12.dp))
+
+                OutlinedTextField(
+                    value = motivoCita,
+                    onValueChange = { motivoCita = it },
+                    label = { Text("Describe el motivo") },
+                    placeholder = { Text("Ej: Consulta general, vacunación, control...") },
+                    leadingIcon = { Icon(Icons.Default.Description, contentDescription = null) },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = textFieldColors,
+                    minLines = 3,
+                    maxLines = 5
+                )
+            }
+        }
+
+        Spacer(Modifier.height(16.dp))
+
+        // Fecha y hora
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            shape = RoundedCornerShape(12.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(Modifier.padding(16.dp)) {
+                Text(
+                    "Fecha y Hora",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF7DA581)
+                )
+                Spacer(Modifier.height(12.dp))
+
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = { datePickerDialog.show() },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = Color(0xFF7DA581)
+                        ),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Icon(Icons.Default.CalendarToday, contentDescription = null, modifier = Modifier.size(20.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text(
+                            if (selectedDateText.isEmpty()) "Fecha" else selectedDateText,
+                            fontWeight = FontWeight.Medium,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+
+                    OutlinedButton(
+                        onClick = { timePickerDialog.show() },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = Color(0xFF7DA581)
+                        ),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Icon(Icons.Default.AccessTime, contentDescription = null, modifier = Modifier.size(20.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text(
+                            if (selectedTimeText.isEmpty()) "Hora" else selectedTimeText,
+                            fontWeight = FontWeight.Medium,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                }
             }
         }
 
         Spacer(Modifier.height(24.dp))
 
+        // Botón de agendar
         Button(
             onClick = {
                 val mascotaId = mascotaSeleccionadaId
@@ -190,7 +343,7 @@ fun CitasScreen(
                         } catch (_: Throwable) { /* ignora si no existe */ }
 
                         launch(Dispatchers.Main) {
-                            Toast.makeText(context, "Cita guardada", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "✓ Cita agendada exitosamente", Toast.LENGTH_SHORT).show()
                             navController.navigate(NavigationItem.Citas.route)
                         }
                     } catch (e: Exception) {
@@ -199,16 +352,20 @@ fun CitasScreen(
                             if (code == 401) {
                                 Toast.makeText(context, "Sesión expirada. Inicia sesión nuevamente.", Toast.LENGTH_SHORT).show()
                             } else {
-                                Toast.makeText(context, "Error al guardar cita", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "Error al guardar cita: ${e.message}", Toast.LENGTH_SHORT).show()
                             }
                         }
                     }
                 }
             },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(50.dp)
-        ) { Text("Guardar cita") }
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF7DA581)),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Icon(Icons.Default.Save, contentDescription = null)
+            Spacer(Modifier.width(8.dp))
+            Text("Agendar Cita", fontWeight = FontWeight.Bold)
+        }
     }
 }
 

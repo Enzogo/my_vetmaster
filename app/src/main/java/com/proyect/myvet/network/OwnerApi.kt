@@ -1,5 +1,6 @@
 package com.proyect.myvet.network
 
+import retrofit2.Response
 import retrofit2.http.*
 
 data class MascotaDto(
@@ -8,15 +9,17 @@ data class MascotaDto(
     val especie: String?,
     val raza: String?,
     val fechaNacimiento: String?,
-    val sexo: String?
+    val sexo: String?,
+    val edad: Int?
 )
 
 data class MascotaCreateRequest(
     val nombre: String,
     val especie: String,
-    val raza: String?,
-    val fechaNacimiento: String?,
-    val sexo: String?
+    val raza: String? = null,
+    val fechaNacimiento: String? = null,
+    val sexo: String? = null,
+    val edad: Int? = null
 )
 
 data class MascotaUpdateRequest(
@@ -24,7 +27,18 @@ data class MascotaUpdateRequest(
     val especie: String? = null,
     val raza: String? = null,
     val fechaNacimiento: String? = null,
-    val sexo: String? = null
+    val sexo: String? = null,
+    val edad: Int? = null
+)
+
+data class MascotaResponse(
+    val id: String,
+    val nombre: String,
+    val especie: String,
+    val raza: String?,
+    val fechaNacimiento: String?,
+    val sexo: String?,
+    val edad: Int?
 )
 
 data class CitaDto(
@@ -34,20 +48,63 @@ data class CitaDto(
     val mascotaId: String?,
     val estado: String? = null
 )
-data class CitaCreateRequest(val fechaIso: String, val motivo: String, val mascotaId: String)
-data class CitaUpdateRequest(val fechaIso: String? = null, val motivo: String? = null, val mascotaId: String? = null)
+
+data class CitaCreateRequest(
+    val fechaIso: String, 
+    val motivo: String, 
+    val mascotaId: String
+)
+
+data class CitaUpdateRequest(
+    val fechaIso: String? = null, 
+    val motivo: String? = null, 
+    val mascotaId: String? = null
+)
+
+data class OwnerProfileResponse(
+    val nombre: String? = null,
+    val telefono: String? = null,
+    val direccion: String? = null,
+    val email: String? = null
+)
 
 interface OwnerApi {
-    data class OwnerProfileRequest(val nombre: String, val telefono: String?, val direccion: String?)
-    @POST("api/owners/me/profile") suspend fun saveProfile(@Body body: OwnerProfileRequest): Boolean
+    data class OwnerProfileRequest(
+        val nombre: String,
+        val telefono: String?,
+        val direccion: String?
+    )
 
-    @GET("api/owners/me/mascotas") suspend fun getMyMascotas(): List<MascotaDto>
-    @POST("api/owners/me/mascotas") suspend fun createMascota(@Body body: MascotaCreateRequest): MascotaDto
-    @PUT("api/owners/me/mascotas/{id}") suspend fun updateMascota(@Path("id") id: String, @Body body: MascotaUpdateRequest): MascotaDto
-    @DELETE("api/owners/me/mascotas/{id}") suspend fun deleteMascota(@Path("id") id: String): Boolean
+    @GET("api/owners/me")
+    suspend fun me(): OwnerProfileResponse
 
-    @GET("api/owners/me/citas") suspend fun getMyCitas(): List<CitaDto>
-    @POST("api/owners/me/citas") suspend fun createCita(@Body body: CitaCreateRequest): CitaDto
-    @PUT("api/owners/me/citas/{id}") suspend fun updateCita(@Path("id") id: String, @Body body: CitaUpdateRequest): CitaDto
-    @DELETE("api/owners/me/citas/{id}") suspend fun deleteCita(@Path("id") id: String): Boolean
+    @POST("api/owners/me/profile")
+    suspend fun saveProfile(@Body body: OwnerProfileRequest): Boolean
+
+    @GET("api/owners/me/mascotas")
+    suspend fun getMyMascotas(): List<MascotaDto>
+
+    @GET("api/owners/me/mascotas")
+    suspend fun listMyMascotas(): Response<List<MascotaResponse>>
+
+    @POST("api/owners/me/mascotas")
+    suspend fun createMascota(@Body req: MascotaCreateRequest): Response<MascotaResponse>
+
+    @PUT("api/owners/me/mascotas/{id}")
+    suspend fun updateMascota(@Path("id") id: String, @Body req: MascotaUpdateRequest): MascotaDto
+
+    @DELETE("api/owners/me/mascotas/{id}")
+    suspend fun deleteMascota(@Path("id") id: String)
+
+    @GET("api/owners/me/citas")
+    suspend fun getMyCitas(): List<CitaDto>
+
+    @POST("api/owners/me/citas")
+    suspend fun createCita(@Body req: CitaCreateRequest): CitaDto
+
+    @PUT("api/owners/me/citas/{id}")
+    suspend fun updateCita(@Path("id") id: String, @Body req: CitaUpdateRequest): CitaDto
+
+    @DELETE("api/owners/me/citas/{id}")
+    suspend fun deleteCita(@Path("id") id: String)
 }

@@ -35,7 +35,12 @@ object RetrofitClient {
     fun authed(context: Context): Retrofit =
         Retrofit.Builder()
             .baseUrl(BASE_URL)
-            .client(baseClientBuilder().addInterceptor(TokenInterceptor(context)).build())
+            .client(
+                baseClientBuilder()
+                    .addInterceptor(TokenInterceptor(context))
+                    .addInterceptor(AuthLogoutInterceptor(context))
+                    .build()
+            )
             .addConverterFactory(GsonConverterFactory.create())
             .build()
 }
