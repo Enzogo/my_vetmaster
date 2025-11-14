@@ -31,18 +31,16 @@ import com.proyect.myvet.Notificacion
 import com.proyect.myvet.historial.HistorialCita
 import com.proyect.myvet.historial.HistorialManager
 import com.proyect.myvet.network.CitaCreateRequest
-import com.proyect.myvet.network.MascotaDto
 import com.proyect.myvet.network.OwnerApi
 import com.proyect.myvet.network.RetrofitClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import retrofit2.HttpException
-import java.net.URLDecoder
-import java.nio.charset.StandardCharsets
-import java.util.Calendar
+import java.text.SimpleDateFormat
+import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
-@SuppressLint("DefaultLocale")
 @Composable
 fun CitasScreen(
     navController: NavController,
@@ -51,17 +49,25 @@ fun CitasScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
+    var mascotas by remember { mutableStateOf<List<com.proyect.myvet.network.MascotaDto>>(emptyList()) }
+    var mascotaSeleccionadaId by remember { mutableStateOf<String?>(null) }
+    var mascotasLoading by remember { mutableStateOf(false) }
+
+    // Prellenar el motivo si viene desde prediagnóstico (decodificar URL)
     val motivoPrefill = remember(motivoInicial) {
-        motivoInicial?.let { URLDecoder.decode(it, StandardCharsets.UTF_8.name()) } ?: ""
+        motivoInicial?.let {
+            try {
+                java.net.URLDecoder.decode(it, "UTF-8")
+            } catch (e: Exception) {
+                it
+            }
+        } ?: ""
     }
 
     var motivoCita by remember { mutableStateOf(motivoPrefill) }
     var selectedDateText by remember { mutableStateOf("") }
     var selectedTimeText by remember { mutableStateOf("") }
-
-    var mascotas by remember { mutableStateOf<List<MascotaDto>>(emptyList()) }
-    var mascotaSeleccionadaId by remember { mutableStateOf<String?>(null) }
-    var mascotasLoading by remember { mutableStateOf(false) }
+    var calendar = remember { Calendar.getInstance() }
 
     // Colores para campos de texto (texto negro)
     val textFieldColors = OutlinedTextFieldDefaults.colors(
@@ -74,7 +80,7 @@ fun CitasScreen(
         unfocusedLabelColor = Color.Gray
     )
 
-    // Cargar mascotas
+    // Cargar mascotas del usuario al iniciar
     LaunchedEffect(Unit) {
         mascotasLoading = true
         try {
@@ -87,31 +93,6 @@ fun CitasScreen(
         }
     }
 
-    val calendar = Calendar.getInstance()
-
-    val datePickerDialog = DatePickerDialog(
-        context,
-        { _, y, m, d ->
-            selectedDateText = "%02d/%02d/%04d".format(d, m + 1, y)
-            calendar.set(y, m, d)
-        },
-        calendar.get(Calendar.YEAR),
-        calendar.get(Calendar.MONTH),
-        calendar.get(Calendar.DAY_OF_MONTH)
-    )
-
-    val timePickerDialog = TimePickerDialog(
-        context,
-        { _, h, m ->
-            selectedTimeText = String.format("%02d:%02d", h, m)
-            calendar.set(Calendar.HOUR_OF_DAY, h)
-            calendar.set(Calendar.MINUTE, m)
-        },
-        calendar.get(Calendar.HOUR_OF_DAY),
-        calendar.get(Calendar.MINUTE),
-        true
-    )
-
     Column(
         Modifier
             .fillMaxSize()
@@ -119,7 +100,6 @@ fun CitasScreen(
             .verticalScroll(rememberScrollState())
             .padding(16.dp)
     ) {
-        // Encabezado
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = Color(0xFF7DA581)),
@@ -132,52 +112,25 @@ fun CitasScreen(
                     .padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    Icons.Default.CalendarMonth,
-                    contentDescription = null,
-                    tint = Color.Black,
-                    modifier = Modifier.size(32.dp)
-                )
+                Icon(Icons.Default.CalendarMonth, contentDescription = null, tint = Color.Black, modifier = Modifier.size(32.dp))
                 Spacer(Modifier.width(12.dp))
                 Column {
-                    Text(
-                        "Agendar Cita",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Black
-                    )
-                    Text(
-                        "Programa tu consulta veterinaria",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.Black.copy(alpha = 0.7f)
-                    )
+                    Text("Agendar Cita", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = Color.Black)
+                    Text("Selecciona mascota, fecha y hora", style = MaterialTheme.typography.bodySmall, color = Color.Black.copy(alpha = 0.7f))
                 }
             }
         }
 
         Spacer(Modifier.height(16.dp))
 
-        // Selección de mascota
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            shape = RoundedCornerShape(12.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-        ) {
+        // Selector de mascota
+        Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = Color.White), shape = RoundedCornerShape(12.dp)) {
             Column(Modifier.padding(16.dp)) {
-                Text(
-                    "Mascota",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF7DA581)
-                )
-                Spacer(Modifier.height(12.dp))
+                Text("Selecciona tu mascota", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color(0xFF7DA581))
+                Spacer(Modifier.height(8.dp))
 
                 var expanded by remember { mutableStateOf(false) }
-                ExposedDropdownMenuBox(
-                    expanded = expanded,
-                    onExpandedChange = { expanded = !expanded }
-                ) {
+                ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
                     OutlinedTextField(
                         readOnly = true,
                         value = mascotas.firstOrNull { it.id == mascotaSeleccionadaId }?.nombre
@@ -191,24 +144,15 @@ fun CitasScreen(
                             .fillMaxWidth(),
                         colors = textFieldColors
                     )
-                    ExposedDropdownMenu(
-                        expanded = expanded,
-                        onDismissRequest = { expanded = false }
-                    ) {
+                    ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                         if (mascotas.isEmpty()) {
-                            DropdownMenuItem(
-                                text = { Text("No hay mascotas registradas") },
-                                onClick = { expanded = false }
-                            )
+                            DropdownMenuItem(text = { Text("No hay mascotas registradas") }, onClick = { expanded = false })
                         } else {
                             mascotas.forEach { m ->
-                                DropdownMenuItem(
-                                    text = { Text(m.nombre ?: "(sin nombre)", color = Color.Black) },
-                                    onClick = {
-                                        mascotaSeleccionadaId = m.id
-                                        expanded = false
-                                    }
-                                )
+                                DropdownMenuItem(text = { Text(m.nombre ?: "(sin nombre)", color = Color.Black) }, onClick = {
+                                    mascotaSeleccionadaId = m.id
+                                    expanded = false
+                                })
                             }
                         }
                     }
@@ -218,29 +162,17 @@ fun CitasScreen(
 
         Spacer(Modifier.height(16.dp))
 
-        // Motivo de la cita
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            shape = RoundedCornerShape(12.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-        ) {
+        // Motivo
+        Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = Color.White), shape = RoundedCornerShape(12.dp)) {
             Column(Modifier.padding(16.dp)) {
-                Text(
-                    "Motivo de la Cita",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF7DA581)
-                )
-                Spacer(Modifier.height(12.dp))
-
+                Text("Motivo de la cita", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color(0xFF7DA581))
+                Spacer(Modifier.height(8.dp))
                 OutlinedTextField(
                     value = motivoCita,
                     onValueChange = { motivoCita = it },
-                    label = { Text("Describe el motivo") },
-                    placeholder = { Text("Ej: Consulta general, vacunación, control...") },
-                    leadingIcon = { Icon(Icons.Default.Description, contentDescription = null) },
+                    label = { Text("Motivo") },
                     modifier = Modifier.fillMaxWidth(),
+                    singleLine = false,
                     colors = textFieldColors,
                     minLines = 3,
                     maxLines = 5
@@ -251,57 +183,63 @@ fun CitasScreen(
         Spacer(Modifier.height(16.dp))
 
         // Fecha y hora
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            shape = RoundedCornerShape(12.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-        ) {
+        Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = Color.White), shape = RoundedCornerShape(12.dp)) {
             Column(Modifier.padding(16.dp)) {
-                Text(
-                    "Fecha y Hora",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF7DA581)
-                )
+                Text("Fecha y hora", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color(0xFF7DA581))
                 Spacer(Modifier.height(12.dp))
 
-                Row(
-                    Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
+                val today = Calendar.getInstance()
+                val datePickerDialog = DatePickerDialog(
+                    context,
+                    { _, year, month, dayOfMonth ->
+                        calendar.set(Calendar.YEAR, year)
+                        calendar.set(Calendar.MONTH, month)
+                        calendar.set(Calendar.DAY_OF_MONTH, dayOfMonth)
+                        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                        selectedDateText = sdf.format(calendar.time)
+                    },
+                    today.get(Calendar.YEAR),
+                    today.get(Calendar.MONTH),
+                    today.get(Calendar.DAY_OF_MONTH)
+                )
+
+                val timePickerDialog = TimePickerDialog(
+                    context,
+                    { _, hourOfDay, minute ->
+                        calendar.set(Calendar.HOUR_OF_DAY, hourOfDay)
+                        calendar.set(Calendar.MINUTE, minute)
+                        val tf = SimpleDateFormat("HH:mm", Locale.getDefault())
+                        selectedTimeText = tf.format(calendar.time)
+                    },
+                    today.get(Calendar.HOUR_OF_DAY),
+                    today.get(Calendar.MINUTE),
+                    true
+                )
+
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                     OutlinedButton(
                         onClick = { datePickerDialog.show() },
                         modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = Color(0xFF7DA581)
-                        ),
-                        shape = RoundedCornerShape(8.dp)
+                            contentColor = Color.Black
+                        )
                     ) {
                         Icon(Icons.Default.CalendarToday, contentDescription = null, modifier = Modifier.size(20.dp))
-                        Spacer(Modifier.width(4.dp))
-                        Text(
-                            if (selectedDateText.isEmpty()) "Fecha" else selectedDateText,
-                            fontWeight = FontWeight.Medium,
-                            style = MaterialTheme.typography.bodySmall
-                        )
+                        Spacer(Modifier.width(6.dp))
+                        Text(if (selectedDateText.isEmpty()) "Seleccionar fecha" else selectedDateText)
                     }
-
                     OutlinedButton(
                         onClick = { timePickerDialog.show() },
                         modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = Color(0xFF7DA581)
-                        ),
-                        shape = RoundedCornerShape(8.dp)
+                            contentColor = Color.Black
+                        )
                     ) {
                         Icon(Icons.Default.AccessTime, contentDescription = null, modifier = Modifier.size(20.dp))
-                        Spacer(Modifier.width(4.dp))
-                        Text(
-                            if (selectedTimeText.isEmpty()) "Hora" else selectedTimeText,
-                            fontWeight = FontWeight.Medium,
-                            style = MaterialTheme.typography.bodySmall
-                        )
+                        Spacer(Modifier.width(6.dp))
+                        Text(if (selectedTimeText.isEmpty()) "Seleccionar hora" else selectedTimeText)
                     }
                 }
             }
@@ -322,33 +260,41 @@ fun CitasScreen(
                 scope.launch(Dispatchers.IO) {
                     try {
                         val api = RetrofitClient.authed(context).create(OwnerApi::class.java)
-                        val created = api.createCita(CitaCreateRequest(fechaIso, motivoCita, mascotaId))
+                        val response = api.createCita(CitaCreateRequest(fechaIso, motivoCita, mascotaId))
 
-                        // Recordatorio local
-                        scheduleExactAlarm(context, calendar.timeInMillis, created.motivo ?: motivoCita)
+                        if (response.isSuccessful && response.body() != null) {
+                            val created = response.body()!!
 
-                        // Historial local (si existe en tu app)
-                        try {
-                            HistorialManager.guardarCita(
-                                context,
-                                HistorialCita(
-                                    System.currentTimeMillis(),
-                                    "(id ${created.mascotaId ?: mascotaId})",
-                                    "",
-                                    created.motivo ?: motivoCita,
-                                    selectedDateText,
-                                    selectedTimeText
+                            // Sólo programar recordatorio después de confirmar persistencia
+                            scheduleExactAlarm(context, calendar.timeInMillis, created.motivo ?: motivoCita)
+
+                            // Historial local (si existe en tu app)
+                            try {
+                                HistorialManager.guardarCita(
+                                    context,
+                                    HistorialCita(
+                                        System.currentTimeMillis(),
+                                        "(id ${created.mascotaId ?: mascotaId})",
+                                        "",
+                                        created.motivo ?: motivoCita,
+                                        selectedDateText,
+                                        selectedTimeText
+                                    )
                                 )
-                            )
-                        } catch (_: Throwable) { /* ignora si no existe */ }
+                            } catch (_: Throwable) { /* ignora si no existe */ }
 
-                        launch(Dispatchers.Main) {
-                            Toast.makeText(context, "✓ Cita agendada exitosamente", Toast.LENGTH_SHORT).show()
-                            navController.navigate(NavigationItem.Citas.route)
+                            withContext(Dispatchers.Main) {
+                                Toast.makeText(context, "✓ Cita agendada exitosamente", Toast.LENGTH_SHORT).show()
+                                navController.navigate(NavigationItem.Citas.route)
+                            }
+                        } else {
+                            withContext(Dispatchers.Main) {
+                                Toast.makeText(context, "Error al guardar cita: ${response.code()}", Toast.LENGTH_SHORT).show()
+                            }
                         }
                     } catch (e: Exception) {
                         val code = (e as? HttpException)?.code()
-                        launch(Dispatchers.Main) {
+                        withContext(Dispatchers.Main) {
                             if (code == 401) {
                                 Toast.makeText(context, "Sesión expirada. Inicia sesión nuevamente.", Toast.LENGTH_SHORT).show()
                             } else {
@@ -366,6 +312,10 @@ fun CitasScreen(
             Spacer(Modifier.width(8.dp))
             Text("Agendar Cita", fontWeight = FontWeight.Bold)
         }
+
+        Spacer(Modifier.height(24.dp))
+
+        // Aquí podrías listar próximas citas, historial, etc. (no modificado)
     }
 }
 

@@ -46,18 +46,19 @@ data class CitaDto(
     val fechaIso: String?,
     val motivo: String?,
     val mascotaId: String?,
-    val estado: String? = null
+    val estado: String? = null,
+    val notas: String? = null
 )
 
 data class CitaCreateRequest(
-    val fechaIso: String, 
-    val motivo: String, 
+    val fechaIso: String,
+    val motivo: String,
     val mascotaId: String
 )
 
 data class CitaUpdateRequest(
-    val fechaIso: String? = null, 
-    val motivo: String? = null, 
+    val fechaIso: String? = null,
+    val motivo: String? = null,
     val mascotaId: String? = null
 )
 
@@ -99,8 +100,9 @@ interface OwnerApi {
     @GET("api/owners/me/citas")
     suspend fun getMyCitas(): List<CitaDto>
 
+    // Cambiado para devolver Response<CitaDto>
     @POST("api/owners/me/citas")
-    suspend fun createCita(@Body req: CitaCreateRequest): CitaDto
+    suspend fun createCita(@Body req: CitaCreateRequest): Response<CitaDto>
 
     @PUT("api/owners/me/citas/{id}")
     suspend fun updateCita(@Path("id") id: String, @Body req: CitaUpdateRequest): CitaDto

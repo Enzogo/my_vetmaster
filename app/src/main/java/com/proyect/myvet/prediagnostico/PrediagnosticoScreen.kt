@@ -264,21 +264,39 @@ fun PrediagnosticoScreen(navController: NavController) {
                 scope.launch {
                     try {
                         val api = RetrofitClient.authed(context).create(PrediagnosticoApi::class.java)
+
+                        // Construir contexto con información de la mascota
+                        val contexto = buildString {
+                            append("Mascota: ${mascotaSeleccionada.nombre ?: "Sin nombre"}")
+                            mascotaSeleccionada.especie?.let { append(", Especie: $it") }
+                            mascotaSeleccionada.fechaNacimiento?.let { append(", Edad/FechaNac: $it") }
+                            mascotaSeleccionada.sexo?.let { append(", Sexo: $it") }
+                            mascotaSeleccionada.raza?.let { append(", Raza: $it") }
+                        }
+
                         val req = PrediagnosticoRequest(
                             sintomas = sintomas.trim(),
                             especie = mascotaSeleccionada.especie,
                             edad = mascotaSeleccionada.fechaNacimiento,
-                            sexo = mascotaSeleccionada.sexo
+                            contexto = contexto
                         )
                         val resp = api.getPrediagnostico(req)
 
                         if (resp.isSuccessful && resp.body() != null) {
                             val body = resp.body()!!
-                            recomendaciones = body.recomendaciones
-                            redFlags = body.red_flags
-                            disclaimer = body.disclaimer
-                            modelUsed = body._model
-                            Toast.makeText(context, "✓ Análisis completado", Toast.LENGTH_SHORT).show()
+                            val parsed = body.parsed
+
+                            if (parsed != null) {
+                                recomendaciones = parsed.recomendaciones
+                                redFlags = parsed.red_flags
+                                disclaimer = parsed.disclaimer
+                                modelUsed = parsed.confidence // Usamos confidence como indicador del modelo
+                                Toast.makeText(context, "✓ Análisis completado", Toast.LENGTH_SHORT).show()
+                            } else {
+                                // Si no hay parsed, mostrar raw
+                                recomendaciones = body.raw ?: "No se pudo obtener recomendaciones"
+                                Toast.makeText(context, "✓ Análisis completado", Toast.LENGTH_SHORT).show()
+                            }
                         } else {
                             val code = resp.code()
                             val msg = when (code) {
@@ -432,11 +450,11 @@ fun PrediagnosticoScreen(navController: NavController) {
                 }
             }
 
-            // Mostrar modelo usado (opcional)
-            modelUsed?.let { model ->
-                if (model.isNotBlank()) {
+            // Mostrar confianza del análisis (opcional)
+            modelUsed?.let { confidence ->
+                if (confidence.isNotBlank()) {
                     Text(
-                        "Modelo IA: $model",
+                        "Nivel de confianza: $confidence",
                         style = MaterialTheme.typography.bodySmall,
                         color = Color.Gray,
                         modifier = Modifier.padding(horizontal = 8.dp)
