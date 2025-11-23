@@ -24,9 +24,61 @@ import com.proyect.myvet.network.PrediagnosticoApi
 import com.proyect.myvet.network.PrediagnosticoRequest
 import com.proyect.myvet.network.RetrofitClient
 import kotlinx.coroutines.launch
+import org.json.JSONObject
 import retrofit2.HttpException
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
+
+// Función para limpiar y parsear JSON de la IA
+fun limpiarTextoJSON(texto: String): String {
+  try {
+    // Primero elimina caracteres de escape
+    var limpio = texto.replace("\\n", "\n").replace("\\\"", "\"").replace("\\\\", "\\")
+
+    // Intenta parsear como JSON
+    if (limpio.startsWith("{") || limpio.startsWith("[")) {
+      val json = JSONObject(limpio)
+      return json.toString(2) // Formato indentado
+    }
+
+    return limpio
+  } catch (e: Exception) {
+    // Si no es JSON válido, solo retorna el texto limpio
+    return texto.replace("\\n", "\n").replace("\\\"", "\"").replace("\\\\", "\\")
+  }
+}
+
+// Función para extraer contenido legible de un string JSON
+fun formatearRespuestaIA(texto: String): String {
+  return try {
+    // Limpia escapes básicos
+    var resultado = texto.replace("\\n", "\n").replace("\\\"", "\"").replace("\\\\", "\\")
+
+    // Si es JSON, lo mejora
+    if (resultado.startsWith("{")) {
+      try {
+        val json = JSONObject(resultado)
+        resultado = json.toString(2)
+      } catch (e: Exception) {
+        // Si falla el parseo JSON, usa el texto limpio
+      }
+    }
+
+    // Elimina caracteres extraños y mejora formato
+    resultado = resultado
+      .replace("\"", "")
+      .replace("{", "")
+      .replace("}", "")
+      .replace("[", "")
+      .replace("]", "")
+      .replace(",", "\n")
+      .trim()
+
+    resultado
+  } catch (e: Exception) {
+    texto
+  }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -367,7 +419,7 @@ fun PrediagnosticoScreen(navController: NavController) {
                         }
                         Spacer(Modifier.height(8.dp))
                         Text(
-                            reco,
+                            formatearRespuestaIA(reco),
                             style = MaterialTheme.typography.bodyMedium,
                             color = Color.Black
                         )
@@ -403,7 +455,7 @@ fun PrediagnosticoScreen(navController: NavController) {
                             }
                             Spacer(Modifier.height(8.dp))
                             Text(
-                                flags,
+                                formatearRespuestaIA(flags),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = Color.Black
                             )
@@ -440,7 +492,7 @@ fun PrediagnosticoScreen(navController: NavController) {
                             }
                             Spacer(Modifier.height(4.dp))
                             Text(
-                                disc,
+                                formatearRespuestaIA(disc),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = Color(0xFF5D4037)
                             )
