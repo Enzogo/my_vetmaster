@@ -1,7 +1,9 @@
 package com.proyect.myvet.citas
 
+import android.app.TimePickerDialog
 import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -23,6 +25,8 @@ import com.proyect.myvet.network.RetrofitClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.text.SimpleDateFormat
+import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -54,6 +58,10 @@ fun HistorialCitasScreen() {
 
     LaunchedEffect(Unit) {
         loadCitas()
+        while (true) {
+            kotlinx.coroutines.delay(30000)
+            loadCitas()
+        }
     }
 
     Column(
@@ -61,7 +69,6 @@ fun HistorialCitasScreen() {
             .fillMaxSize()
             .background(Color(0xFFF5F1EB))
     ) {
-        // Encabezado
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = Color(0xFF7DA581)),
@@ -72,18 +79,23 @@ fun HistorialCitasScreen() {
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Icon(Icons.Default.History, contentDescription = null, tint = Color.Black, modifier = Modifier.size(32.dp))
-                Spacer(Modifier.width(12.dp))
-                Column {
-                    Text("Historial de Citas", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = Color.Black)
-                    Text("Consulta tus citas pendientes y completadas", style = MaterialTheme.typography.bodySmall, color = Color.Black.copy(alpha = 0.7f))
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                    Icon(Icons.Default.History, contentDescription = null, tint = Color.Black, modifier = Modifier.size(32.dp))
+                    Spacer(Modifier.width(12.dp))
+                    Column {
+                        Text("Historial de Citas", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = Color.Black)
+                        Text("Consulta tus citas pendientes y completadas", style = MaterialTheme.typography.bodySmall, color = Color.Black.copy(alpha = 0.7f))
+                    }
+                }
+                IconButton(onClick = { loadCitas() }, enabled = !isLoading) {
+                    Icon(Icons.Default.Refresh, contentDescription = "Actualizar", tint = Color.Black)
                 }
             }
         }
 
-        // Tabs
         TabRow(
             selectedTabIndex = selectedTab,
             containerColor = Color(0xFF7DA581),
@@ -187,7 +199,6 @@ fun TarjetaCitaPendiente(cita: CitaDto) {
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(Modifier.padding(16.dp)) {
-            // Encabezado con estado
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -195,7 +206,7 @@ fun TarjetaCitaPendiente(cita: CitaDto) {
             ) {
                 Column(Modifier.weight(1f)) {
                     Text(
-                        "Tutor: ${cita.mascotaId ?: "N/A"}",
+                        "Tutor: ${cita.duenioNombre ?: "N/A"}",
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp,
                         color = Color.Black
@@ -219,7 +230,6 @@ fun TarjetaCitaPendiente(cita: CitaDto) {
             Divider(color = Color.LightGray)
             Spacer(Modifier.height(12.dp))
 
-            // Información de fecha y hora
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -234,11 +244,10 @@ fun TarjetaCitaPendiente(cita: CitaDto) {
 
             Spacer(Modifier.height(8.dp))
 
-            // Información de la mascota
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Default.Pets, contentDescription = null, tint = Color(0xFF7DA581), modifier = Modifier.size(20.dp))
                 Spacer(Modifier.width(8.dp))
-                Text("Mascota: ${cita.mascotaId ?: "N/A"}", fontSize = 12.sp, color = Color.Black)
+                Text("Mascota: ${cita.nombreMascota ?: "N/A"}", fontSize = 12.sp, color = Color.Black)
             }
 
             if (!cita.duenioTelefono.isNullOrBlank()) {
@@ -264,6 +273,12 @@ fun TarjetaCitaPendiente(cita: CitaDto) {
 
 @Composable
 fun TarjetaCitaCompletada(cita: CitaDto) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var horaInicio by remember { mutableStateOf(cita.horaInicio ?: "") }
+    var horaFin by remember { mutableStateOf(cita.horaFin ?: "") }
+    var isEditingTime by remember { mutableStateOf(false) }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -271,7 +286,6 @@ fun TarjetaCitaCompletada(cita: CitaDto) {
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(Modifier.padding(16.dp)) {
-            // Encabezado con estado
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -279,7 +293,7 @@ fun TarjetaCitaCompletada(cita: CitaDto) {
             ) {
                 Column(Modifier.weight(1f)) {
                     Text(
-                        "Tutor: ${cita.mascotaId ?: "N/A"}",
+                        "Tutor: ${cita.duenioNombre ?: "N/A"}",
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp,
                         color = Color.Black
@@ -303,34 +317,168 @@ fun TarjetaCitaCompletada(cita: CitaDto) {
             Divider(color = Color.LightGray)
             Spacer(Modifier.height(12.dp))
 
-            // Información de fecha
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
                     Icon(Icons.Default.CalendarToday, contentDescription = null, tint = Color(0xFF7DA581), modifier = Modifier.size(20.dp))
                     Spacer(Modifier.width(4.dp))
                     Text(cita.fechaIso ?: "", fontSize = 12.sp, color = Color.Black, fontWeight = FontWeight.Medium)
                 }
+            }
 
-                if (!cita.horaInicio.isNullOrBlank() || !cita.horaFin.isNullOrBlank()) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.AccessTime, contentDescription = null, tint = Color(0xFF7DA581), modifier = Modifier.size(20.dp))
-                        Spacer(Modifier.width(4.dp))
-                        Text("${cita.horaInicio ?: ""} - ${cita.horaFin ?: ""}", fontSize = 12.sp, color = Color.Black, fontWeight = FontWeight.Medium)
+            Spacer(Modifier.height(12.dp))
+
+            if (isEditingTime) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F1EB)),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
+                ) {
+                    Column(Modifier.padding(12.dp)) {
+                        Text("Registrar Hora de Atención", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color(0xFF7DA581))
+                        Spacer(Modifier.height(8.dp))
+
+                        val calendar = remember { Calendar.getInstance() }
+                        val timePickerDialogInicio = TimePickerDialog(
+                            context,
+                            { _, hourOfDay, minute ->
+                                val tf = SimpleDateFormat("HH:mm", Locale.getDefault())
+                                val cal = Calendar.getInstance()
+                                cal.set(Calendar.HOUR_OF_DAY, hourOfDay)
+                                cal.set(Calendar.MINUTE, minute)
+                                horaInicio = tf.format(cal.time)
+                            },
+                            calendar.get(Calendar.HOUR_OF_DAY),
+                            calendar.get(Calendar.MINUTE),
+                            true
+                        )
+
+                        val timePickerDialogFin = TimePickerDialog(
+                            context,
+                            { _, hourOfDay, minute ->
+                                val tf = SimpleDateFormat("HH:mm", Locale.getDefault())
+                                val cal = Calendar.getInstance()
+                                cal.set(Calendar.HOUR_OF_DAY, hourOfDay)
+                                cal.set(Calendar.MINUTE, minute)
+                                horaFin = tf.format(cal.time)
+                            },
+                            calendar.get(Calendar.HOUR_OF_DAY),
+                            calendar.get(Calendar.MINUTE),
+                            true
+                        )
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            OutlinedButton(
+                                onClick = { timePickerDialogInicio.show() },
+                                modifier = Modifier.weight(1f),
+                                shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Black)
+                            ) {
+                                Icon(Icons.Default.AccessTime, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(4.dp))
+                                Text(if (horaInicio.isEmpty()) "Inicio" else horaInicio, fontSize = 11.sp)
+                            }
+                            OutlinedButton(
+                                onClick = { timePickerDialogFin.show() },
+                                modifier = Modifier.weight(1f),
+                                shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Black)
+                            ) {
+                                Icon(Icons.Default.AccessTime, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(4.dp))
+                                Text(if (horaFin.isEmpty()) "Fin" else horaFin, fontSize = 11.sp)
+                            }
+                        }
+
+                        Spacer(Modifier.height(8.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Button(
+                                onClick = {
+                                    scope.launch(Dispatchers.IO) {
+                                        try {
+                                            val api = RetrofitClient.authed(context).create(OwnerApi::class.java)
+                                            val updateRequest = com.proyect.myvet.network.CitaUpdateRequest(
+                                                horaInicio = horaInicio,
+                                                horaFin = horaFin
+                                            )
+                                            api.updateCita(cita.id ?: return@launch, updateRequest)
+                                            withContext(Dispatchers.Main) {
+                                                Toast.makeText(context, "✓ Horario guardado", Toast.LENGTH_SHORT).show()
+                                                isEditingTime = false
+                                            }
+                                        } catch (e: Exception) {
+                                            withContext(Dispatchers.Main) {
+                                                Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                                            }
+                                        }
+                                    }
+                                },
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF7DA581)),
+                                shape = androidx.compose.foundation.shape.RoundedCornerShape(6.dp)
+                            ) {
+                                Text("Guardar", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            }
+                            OutlinedButton(
+                                onClick = {
+                                    horaInicio = cita.horaInicio ?: ""
+                                    horaFin = cita.horaFin ?: ""
+                                    isEditingTime = false
+                                },
+                                modifier = Modifier.weight(1f),
+                                shape = androidx.compose.foundation.shape.RoundedCornerShape(6.dp)
+                            ) {
+                                Text("Cancelar", fontSize = 11.sp)
+                            }
+                        }
                     }
+                }
+                Spacer(Modifier.height(12.dp))
+            }
+
+            if (horaInicio.isNotEmpty() || horaFin.isNotEmpty()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { isEditingTime = !isEditingTime }
+                        .padding(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.AccessTime, contentDescription = null, tint = Color(0xFF7DA581), modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("$horaInicio - $horaFin", fontSize = 12.sp, color = Color.Black, fontWeight = FontWeight.Medium)
+                    Spacer(Modifier.width(8.dp))
+                    Icon(Icons.Default.Edit, contentDescription = null, tint = Color(0xFF7DA581), modifier = Modifier.size(16.dp))
+                }
+            } else {
+                Button(
+                    onClick = { isEditingTime = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF7DA581)),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
+                ) {
+                    Icon(Icons.Default.AccessTime, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("Registrar Hora de Atención", fontWeight = FontWeight.Bold)
                 }
             }
 
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(12.dp))
 
-            // Información de la mascota
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Default.Pets, contentDescription = null, tint = Color(0xFF7DA581), modifier = Modifier.size(20.dp))
                 Spacer(Modifier.width(8.dp))
-                Text("Mascota: ${cita.mascotaId ?: "N/A"}", fontSize = 12.sp, color = Color.Black)
+                Text("Mascota: ${cita.nombreMascota ?: "N/A"}", fontSize = 12.sp, color = Color.Black)
             }
 
             if (!cita.duenioTelefono.isNullOrBlank()) {
@@ -355,7 +503,6 @@ fun TarjetaCitaCompletada(cita: CitaDto) {
             Divider(color = Color.LightGray)
             Spacer(Modifier.height(12.dp))
 
-            // Ficha médica
             Text("Ficha Médica", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color(0xFF7DA581))
             Spacer(Modifier.height(8.dp))
 

@@ -56,7 +56,9 @@ data class CitaDto(
     val horaInicio: String? = null,
     val horaFin: String? = null,
     val duenioTelefono: String? = null,
-    val duenioCorreo: String? = null
+    val duenioCorreo: String? = null,
+    val duenioNombre: String? = null,
+    val nombreMascota: String? = null
 )
 
 data class CitaCreateRequest(
@@ -68,7 +70,13 @@ data class CitaCreateRequest(
 data class CitaUpdateRequest(
     val fechaIso: String? = null,
     val motivo: String? = null,
-    val mascotaId: String? = null
+    val mascotaId: String? = null,
+    val horaInicio: String? = null,
+    val horaFin: String? = null,
+    val diagnostico: String? = null,
+    val procedimientos: String? = null,
+    val recomendaciones: String? = null,
+    val estado: String? = null
 )
 
 data class OwnerProfileResponse(
