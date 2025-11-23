@@ -25,8 +25,16 @@ data class VetCitaDto(
     val mascotaId: String? = null,
     val ownerId: String? = null,
     val duenioNombre: String? = null,
+    val mascotaTelefono: String? = null,
+    val duenioTelefono: String? = null,
+    val duenioCorreo: String? = null,
     val mascotaNombre: String? = null,
-    val notas: String? = null
+    val notas: String? = null,
+    val diagnostico: String? = null,
+    val procedimientos: String? = null,
+    val recomendaciones: String? = null,
+    val horaInicio: String? = null,
+    val horaFin: String? = null
 )
 
 data class VetProfileResponse(
@@ -53,8 +61,13 @@ data class VetProfileRequest(
 )
 
 data class VetCitaUpdateRequest(
-    val estado: String? = null,   // "pendiente" | "en_curso" | "hecha"
-    val notas: String? = null
+    val estado: String? = null,
+    val notas: String? = null,
+    val diagnostico: String? = null,
+    val procedimientos: String? = null,
+    val recomendaciones: String? = null,
+    val horaInicio: String? = null,
+    val horaFin: String? = null
 )
 
 interface VetApi {

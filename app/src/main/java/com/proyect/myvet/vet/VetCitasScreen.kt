@@ -19,6 +19,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.proyect.myvet.auth.LocalAuthViewModel
 import com.proyect.myvet.network.MascotaDto
@@ -27,7 +28,9 @@ import com.proyect.myvet.network.VetApi
 import com.proyect.myvet.network.VetCitaDto
 import com.proyect.myvet.network.VetCitaUpdateRequest
 import com.proyect.myvet.network.VetProfileResponse
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import retrofit2.HttpException
 
 // =========== PANTALLA PERFIL VETERINARIO =============
@@ -417,7 +420,13 @@ fun VetCitasScreen() {
             items(citas) { c ->
                 var estado by remember(c.id) { mutableStateOf(c.estado ?: "pendiente") }
                 var notas by remember(c.id) { mutableStateOf(c.notas ?: "") }
+                var diagnostico by remember(c.id) { mutableStateOf(c.diagnostico ?: "") }
+                var procedimientos by remember(c.id) { mutableStateOf(c.procedimientos ?: "") }
+                var recomendaciones by remember(c.id) { mutableStateOf(c.recomendaciones ?: "") }
+                var horaInicio by remember(c.id) { mutableStateOf(c.horaInicio ?: "") }
+                var horaFin by remember(c.id) { mutableStateOf(c.horaFin ?: "") }
                 var mascotaSeleccionadaId by remember(c.id) { mutableStateOf(c.mascotaId) }
+                var expandedDetails by remember(c.id) { mutableStateOf(false) }
 
                 val fechaStr = c.fechaIso ?: c.fecha ?: "-"
                 val mascotaStr = c.mascotaNombre ?: c.mascotaId ?: "(Mascota)"
@@ -470,7 +479,7 @@ fun VetCitasScreen() {
                             ) {
                                 Text(
                                     when (estado) {
-                                        "hecha" -> "✓ Hecha"
+                                        "hecha" -> "✓ Completada"
                                         "en_curso" -> "⏳ En curso"
                                         else -> "⏱ Pendiente"
                                     },
@@ -499,7 +508,8 @@ fun VetCitasScreen() {
                             Text(
                                 fechaStr,
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = Color.Black
+                                color = Color.Black,
+                                fontWeight = FontWeight.Medium
                             )
                         }
 
@@ -524,45 +534,27 @@ fun VetCitasScreen() {
                             }
                         }
 
-                        Spacer(Modifier.height(16.dp))
-
-                        // Selector de mascota (si hay mascotas disponibles)
-                        if (mascotas.isNotEmpty()) {
-                            var expandedMascota by remember { mutableStateOf(false) }
-                            ExposedDropdownMenuBox(
-                                expanded = expandedMascota,
-                                onExpandedChange = { expandedMascota = !expandedMascota }
+                        // Datos del tutor
+                        if (!c.duenioTelefono.isNullOrBlank() || !c.duenioCorreo.isNullOrBlank()) {
+                            Spacer(Modifier.height(12.dp))
+                            Surface(
+                                modifier = Modifier.fillMaxWidth(),
+                                color = Color(0xFFF5F1EB),
+                                shape = RoundedCornerShape(8.dp)
                             ) {
-                                OutlinedTextField(
-                                    readOnly = true,
-                                    value = mascotas.firstOrNull { it.id == mascotaSeleccionadaId }?.nombre ?: mascotaStr,
-                                    onValueChange = {},
-                                    label = { Text("Mascota") },
-                                    leadingIcon = {
-                                        Icon(Icons.Default.Pets, contentDescription = null)
-                                    },
-                                    modifier = Modifier
-                                        .menuAnchor()
-                                        .fillMaxWidth(),
-                                    colors = textFieldColors
-                                )
-                                ExposedDropdownMenu(
-                                    expanded = expandedMascota,
-                                    onDismissRequest = { expandedMascota = false }
-                                ) {
-                                    mascotas.forEach { mascota ->
-                                        DropdownMenuItem(
-                                            text = { Text(mascota.nombre ?: "(Sin nombre)") },
-                                            onClick = {
-                                                mascotaSeleccionadaId = mascota.id
-                                                expandedMascota = false
-                                            }
-                                        )
+                                Column(Modifier.padding(12.dp)) {
+                                    Text("Datos del Tutor", fontWeight = FontWeight.SemiBold, fontSize = 11.sp, color = Color(0xFF7DA581))
+                                    if (!c.duenioTelefono.isNullOrBlank()) {
+                                        Text("Tel: ${c.duenioTelefono}", fontSize = 11.sp, color = Color.Black)
+                                    }
+                                    if (!c.duenioCorreo.isNullOrBlank()) {
+                                        Text("Email: ${c.duenioCorreo}", fontSize = 11.sp, color = Color.Black)
                                     }
                                 }
                             }
-                            Spacer(Modifier.height(12.dp))
                         }
+
+                        Spacer(Modifier.height(16.dp))
 
                         // Selector de estado
                         var expandedEstado by remember { mutableStateOf(false) }
@@ -574,7 +566,7 @@ fun VetCitasScreen() {
                                 readOnly = true,
                                 value = when (estado) {
                                     "en_curso" -> "En curso"
-                                    "hecha" -> "Hecha"
+                                    "hecha" -> "Completada"
                                     else -> "Pendiente"
                                 },
                                 onValueChange = {},
@@ -600,13 +592,37 @@ fun VetCitasScreen() {
                                     onClick = { estado = "en_curso"; expandedEstado = false }
                                 )
                                 DropdownMenuItem(
-                                    text = { Text("✓ Hecha") },
+                                    text = { Text("✓ Completada") },
                                     onClick = { estado = "hecha"; expandedEstado = false }
                                 )
                             }
                         }
 
                         Spacer(Modifier.height(12.dp))
+
+                        // Horas de atención (visible cuando se marca como completada)
+                        if (estado == "hecha") {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                OutlinedTextField(
+                                    value = horaInicio,
+                                    onValueChange = { horaInicio = it },
+                                    label = { Text("Hora Inicio") },
+                                    modifier = Modifier.weight(1f),
+                                    colors = textFieldColors
+                                )
+                                OutlinedTextField(
+                                    value = horaFin,
+                                    onValueChange = { horaFin = it },
+                                    label = { Text("Hora Fin") },
+                                    modifier = Modifier.weight(1f),
+                                    colors = textFieldColors
+                                )
+                            }
+                            Spacer(Modifier.height(12.dp))
+                        }
 
                         // Campo de notas
                         OutlinedTextField(
@@ -617,12 +633,73 @@ fun VetCitasScreen() {
                                 Icon(Icons.Default.Edit, contentDescription = null)
                             },
                             modifier = Modifier.fillMaxWidth(),
-                            minLines = 3,
-                            maxLines = 5,
+                            minLines = 2,
+                            maxLines = 3,
                             colors = textFieldColors
                         )
 
-                        Spacer(Modifier.height(16.dp))
+                        Spacer(Modifier.height(12.dp))
+
+                        // Botón expandir ficha médica
+                        Button(
+                            onClick = { expandedDetails = !expandedDetails },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF5F1EB)),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(
+                                if (expandedDetails) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                contentDescription = null
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text("Ficha Médica", fontWeight = FontWeight.Bold, color = Color(0xFF7DA581))
+                        }
+
+                        // Formulario expandible de ficha médica
+                        if (expandedDetails) {
+                            Spacer(Modifier.height(12.dp))
+                            Divider()
+                            Spacer(Modifier.height(12.dp))
+
+                            OutlinedTextField(
+                                value = diagnostico,
+                                onValueChange = { diagnostico = it },
+                                label = { Text("Diagnóstico") },
+                                leadingIcon = { Icon(Icons.Default.Favorite, contentDescription = null) },
+                                modifier = Modifier.fillMaxWidth(),
+                                minLines = 2,
+                                maxLines = 4,
+                                colors = textFieldColors
+                            )
+
+                            Spacer(Modifier.height(12.dp))
+
+                            OutlinedTextField(
+                                value = procedimientos,
+                                onValueChange = { procedimientos = it },
+                                label = { Text("Procedimientos Realizados") },
+                                leadingIcon = { Icon(Icons.Default.MedicalServices, contentDescription = null) },
+                                modifier = Modifier.fillMaxWidth(),
+                                minLines = 2,
+                                maxLines = 4,
+                                colors = textFieldColors
+                            )
+
+                            Spacer(Modifier.height(12.dp))
+
+                            OutlinedTextField(
+                                value = recomendaciones,
+                                onValueChange = { recomendaciones = it },
+                                label = { Text("Recomendaciones") },
+                                leadingIcon = { Icon(Icons.Default.Info, contentDescription = null) },
+                                modifier = Modifier.fillMaxWidth(),
+                                minLines = 2,
+                                maxLines = 4,
+                                colors = textFieldColors
+                            )
+
+                            Spacer(Modifier.height(16.dp))
+                        }
 
                         // Botón guardar
                         Button(
@@ -636,7 +713,15 @@ fun VetCitasScreen() {
                                         }
                                         api.updateCita(
                                             id,
-                                            VetCitaUpdateRequest(estado = estado, notas = notas.ifBlank { null })
+                                            VetCitaUpdateRequest(
+                                                estado = estado,
+                                                notas = notas.ifBlank { null },
+                                                diagnostico = diagnostico.ifBlank { null },
+                                                procedimientos = procedimientos.ifBlank { null },
+                                                recomendaciones = recomendaciones.ifBlank { null },
+                                                horaInicio = horaInicio.ifBlank { null },
+                                                horaFin = horaFin.ifBlank { null }
+                                            )
                                         )
                                         Toast.makeText(context, "✓ Cita actualizada", Toast.LENGTH_SHORT).show()
                                         load()
@@ -646,7 +731,7 @@ fun VetCitasScreen() {
                                             401 -> "No autorizado (token)."
                                             403 -> "Solo veterinarios pueden editar."
                                             404 -> "PATCH /api/vet/citas/{id} no existe en backend."
-                                            else -> "No se pudo actualizar"
+                                            else -> "No se pudo actualizar: ${e.message}"
                                         }
                                         Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
                                     }

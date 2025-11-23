@@ -47,7 +47,16 @@ data class CitaDto(
     val motivo: String?,
     val mascotaId: String?,
     val estado: String? = null,
-    val notas: String? = null
+    val notas: String? = null,
+    val veterinarioNombre: String? = null,
+    val veterinarioId: String? = null,
+    val diagnostico: String? = null,
+    val procedimientos: String? = null,
+    val recomendaciones: String? = null,
+    val horaInicio: String? = null,
+    val horaFin: String? = null,
+    val duenioTelefono: String? = null,
+    val duenioCorreo: String? = null
 )
 
 data class CitaCreateRequest(
@@ -99,6 +108,12 @@ interface OwnerApi {
 
     @GET("api/owners/me/citas")
     suspend fun getMyCitas(): List<CitaDto>
+
+    @GET("api/owners/me/citas/pendientes")
+    suspend fun getCitasPendientes(): List<CitaDto>
+
+    @GET("api/owners/me/citas/completadas")
+    suspend fun getCitasCompletadas(): List<CitaDto>
 
     // Cambiado para devolver Response<CitaDto>
     @POST("api/owners/me/citas")

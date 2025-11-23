@@ -33,6 +33,7 @@ import androidx.navigation.navArgument
 import com.google.gson.Gson
 import com.proyect.myvet.auth.LocalAuthViewModel
 import com.proyect.myvet.citas.CitasScreen
+import com.proyect.myvet.citas.HistorialCitasScreen as HistorialCitasScreenNew
 import com.proyect.myvet.historial.DetalleHistorialScreen
 import com.proyect.myvet.historial.HistorialCita
 import com.proyect.myvet.historial.HistorialScreen
@@ -98,7 +99,7 @@ fun MainScreen() {
                     arguments = listOf(navArgument("motivo") { type = NavType.StringType; nullable = true; defaultValue = null })
                 ) { CitasScreen(navController = navController, motivoInicial = it.arguments?.getString("motivo")) }
                 composable(NavigationItem.Prediagnostico.route) { PrediagnosticoScreen(navController = navController) }
-                composable(NavigationItem.Historial.route) { HistorialScreen(navController = navController) }
+                composable(NavigationItem.Historial.route) { HistorialCitasScreenNew() }
                 composable(
                     route = "detalle_historial/{citaJson}",
                     arguments = listOf(navArgument("citaJson") { type = NavType.StringType })
