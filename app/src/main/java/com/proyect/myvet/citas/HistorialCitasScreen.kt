@@ -47,14 +47,61 @@ fun HistorialCitasScreen() {
         scope.launch(Dispatchers.IO) {
             try {
                 val api = RetrofitClient.authed(context).create(OwnerApi::class.java)
-                citasPendientes = api.getCitasPendientes()
-                citasCompletadas = api.getCitasCompletadas()
+                println("[HistorialCitas] Iniciando carga de citas...")
+
+                try {
+                    println("[HistorialCitas] Llamando getCitasPendientes()...")
+                    citasPendientes = api.getCitasPendientes()
+                    println("[HistorialCitas] ✓ Citas pendientes cargadas: ${citasPendientes.size}")
+                } catch (e: Exception) {
+                    // Mejor debug para HttpException
+                    if (e is retrofit2.HttpException) {
+                        val code = e.code()
+                        val err = try { e.response()?.errorBody()?.string() ?: "" } catch (_: Exception) { "(no body)" }
+                        println("[HistorialCitas] ✗ HttpException getCitasPendientes: code=$code body=$err")
+                        withContext(Dispatchers.Main) {
+                            Toast.makeText(context, "Error cargando pendientes: $code", Toast.LENGTH_SHORT).show()
+                        }
+                    } else {
+                        println("[HistorialCitas] ✗ Error getCitasPendientes: ${e.message}")
+                    }
+                    e.printStackTrace()
+                    citasPendientes = emptyList()
+                }
+
+                try {
+                    println("[HistorialCitas] Llamando getCitasCompletadas()...")
+                    citasCompletadas = api.getCitasCompletadas()
+                    println("[HistorialCitas] ✓ Citas completadas cargadas: ${citasCompletadas.size}")
+                } catch (e: Exception) {
+                    if (e is retrofit2.HttpException) {
+                        val code = e.code()
+                        val err = try { e.response()?.errorBody()?.string() ?: "" } catch (_: Exception) { "(no body)" }
+                        println("[HistorialCitas] ✗ HttpException getCitasCompletadas: code=$code body=$err")
+                        withContext(Dispatchers.Main) {
+                            Toast.makeText(context, "Error cargando completadas: $code", Toast.LENGTH_SHORT).show()
+                        }
+                    } else {
+                        println("[HistorialCitas] ✗ Error getCitasCompletadas: ${e.message}")
+                    }
+                    e.printStackTrace()
+                    citasCompletadas = emptyList()
+                }
+
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(context, "✓ Citas actualizadas", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "✓ Citas actualizadas (${citasPendientes.size}/${citasCompletadas.size})", Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
+                println("[HistorialCitas] ✗ Error general: ${e.message}")
+                e.printStackTrace()
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(context, "Error cargando citas: ${e.message}", Toast.LENGTH_SHORT).show()
+                    val errorMsg = when {
+                        e.message?.contains("401") == true -> "No autorizado - Inicia sesión nuevamente"
+                        e.message?.contains("400") == true -> "Error en la solicitud"
+                        e.message?.contains("500") == true -> "Error del servidor"
+                        else -> "Error: ${e.message}"
+                    }
+                    Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
                 }
             } finally {
                 isLoading = false
@@ -64,8 +111,10 @@ fun HistorialCitasScreen() {
 
     LaunchedEffect(Unit) {
         loadCitas()
+        // Actualizar cada vez que vuelve a este screen
+        val updateInterval = 2000L // Actualizar cada 2 segundos mientras está visible
         while (true) {
-            kotlinx.coroutines.delay(30000)
+            kotlinx.coroutines.delay(updateInterval)
             loadCitas()
         }
     }
@@ -593,4 +642,3 @@ fun TarjetaCitaCompletada(cita: CitaDto) {
         }
     }
 }
-
