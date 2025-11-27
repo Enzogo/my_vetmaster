@@ -117,11 +117,6 @@ fun HistorialCitasScreen() {
 
     LaunchedEffect(Unit) {
         loadCitas()
-        val updateInterval = 2000L
-        while (true) {
-            kotlinx.coroutines.delay(updateInterval)
-            loadCitas()
-        }
     }
 
     Column(
