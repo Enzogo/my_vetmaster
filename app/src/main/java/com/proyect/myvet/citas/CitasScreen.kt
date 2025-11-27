@@ -267,6 +267,7 @@ fun CitasScreen(
 
                         if (response.isSuccessful && response.body() != null) {
                             val created = response.body()!!
+                            println("[CitasScreen] ✓ Cita creada: ${created.id}")
 
                             // Sólo programar recordatorio después de confirmar persistencia
                             scheduleExactAlarm(context, calendar.timeInMillis, created.motivo ?: motivoCita)
@@ -286,9 +287,16 @@ fun CitasScreen(
                                 )
                             } catch (_: Throwable) { /* ignora si no existe */ }
 
+                            // Esperar un poco para asegurar que la BD persistió
+                            kotlinx.coroutines.delay(1500)
+
                             withContext(Dispatchers.Main) {
                                 Toast.makeText(context, "✓ Cita agendada exitosamente", Toast.LENGTH_SHORT).show()
-                                navController.navigate(NavigationItem.Citas.route)
+                                // Navegar al HistorialCitasScreen para que vea la cita recién creada
+                                navController.navigate(NavigationItem.Historial.route) {
+                                    popUpTo(NavigationItem.Citas.route) { saveState = true }
+                                    launchSingleTop = true
+                                }
                             }
                         } else {
                             withContext(Dispatchers.Main) {

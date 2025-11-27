@@ -27,6 +27,7 @@ import com.proyect.myvet.network.RetrofitClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import retrofit2.HttpException
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -49,70 +50,74 @@ fun HistorialCitasScreen() {
                 val api = RetrofitClient.authed(context).create(OwnerApi::class.java)
                 println("[HistorialCitas] Iniciando carga de citas...")
 
+                // Cargar pendientes
                 try {
-                    println("[HistorialCitas] Llamando getCitasPendientes()...")
+                    println("[HistorialCitas] GET /api/owners/me/citas/pendientes")
                     citasPendientes = api.getCitasPendientes()
                     println("[HistorialCitas] ✓ Citas pendientes cargadas: ${citasPendientes.size}")
                 } catch (e: Exception) {
-                    // Mejor debug para HttpException
-                    if (e is retrofit2.HttpException) {
+                    if (e is HttpException) {
                         val code = e.code()
-                        val err = try { e.response()?.errorBody()?.string() ?: "" } catch (_: Exception) { "(no body)" }
-                        println("[HistorialCitas] ✗ HttpException getCitasPendientes: code=$code body=$err")
+                        println("[HistorialCitas] ✗ Error pendientes: code=$code")
                         withContext(Dispatchers.Main) {
-                            Toast.makeText(context, "Error cargando pendientes: $code", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Error $code cargando pendientes", Toast.LENGTH_SHORT).show()
                         }
                     } else {
-                        println("[HistorialCitas] ✗ Error getCitasPendientes: ${e.message}")
+                        println("[HistorialCitas] ✗ Error pendientes: ${e.message}")
+                        withContext(Dispatchers.Main) {
+                            Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                        }
                     }
-                    e.printStackTrace()
                     citasPendientes = emptyList()
                 }
 
+                // Cargar completadas
                 try {
-                    println("[HistorialCitas] Llamando getCitasCompletadas()...")
+                    println("[HistorialCitas] GET /api/owners/me/citas/completadas")
                     citasCompletadas = api.getCitasCompletadas()
                     println("[HistorialCitas] ✓ Citas completadas cargadas: ${citasCompletadas.size}")
                 } catch (e: Exception) {
-                    if (e is retrofit2.HttpException) {
+                    if (e is HttpException) {
                         val code = e.code()
-                        val err = try { e.response()?.errorBody()?.string() ?: "" } catch (_: Exception) { "(no body)" }
-                        println("[HistorialCitas] ✗ HttpException getCitasCompletadas: code=$code body=$err")
+                        println("[HistorialCitas] ✗ Error completadas: code=$code")
                         withContext(Dispatchers.Main) {
-                            Toast.makeText(context, "Error cargando completadas: $code", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Error $code cargando completadas", Toast.LENGTH_SHORT).show()
                         }
                     } else {
-                        println("[HistorialCitas] ✗ Error getCitasCompletadas: ${e.message}")
+                        println("[HistorialCitas] ✗ Error completadas: ${e.message}")
+                        withContext(Dispatchers.Main) {
+                            Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                        }
                     }
-                    e.printStackTrace()
                     citasCompletadas = emptyList()
                 }
 
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(context, "✓ Citas actualizadas (${citasPendientes.size}/${citasCompletadas.size})", Toast.LENGTH_SHORT).show()
+                    if (citasPendientes.isNotEmpty() || citasCompletadas.isNotEmpty()) {
+                        Toast.makeText(
+                            context,
+                            "✓ Citas actualizadas (${citasPendientes.size}/${citasCompletadas.size})",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
                 }
             } catch (e: Exception) {
                 println("[HistorialCitas] ✗ Error general: ${e.message}")
                 e.printStackTrace()
                 withContext(Dispatchers.Main) {
-                    val errorMsg = when {
-                        e.message?.contains("401") == true -> "No autorizado - Inicia sesión nuevamente"
-                        e.message?.contains("400") == true -> "Error en la solicitud"
-                        e.message?.contains("500") == true -> "Error del servidor"
-                        else -> "Error: ${e.message}"
-                    }
-                    Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
                 }
             } finally {
-                isLoading = false
+                withContext(Dispatchers.Main) {
+                    isLoading = false
+                }
             }
         }
     }
 
     LaunchedEffect(Unit) {
         loadCitas()
-        // Actualizar cada vez que vuelve a este screen
-        val updateInterval = 2000L // Actualizar cada 2 segundos mientras está visible
+        val updateInterval = 2000L
         while (true) {
             kotlinx.coroutines.delay(updateInterval)
             loadCitas()
@@ -285,16 +290,10 @@ fun TarjetaCitaPendiente(cita: CitaDto) {
             Divider(color = Color.LightGray)
             Spacer(Modifier.height(12.dp))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.CalendarToday, contentDescription = null, tint = Color(0xFF7DA581), modifier = Modifier.size(20.dp))
-                    Spacer(Modifier.width(4.dp))
-                    Text(cita.fechaIso ?: "", fontSize = 12.sp, color = Color.Black, fontWeight = FontWeight.Medium)
-                }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.CalendarToday, contentDescription = null, tint = Color(0xFF7DA581), modifier = Modifier.size(20.dp))
+                Spacer(Modifier.width(4.dp))
+                Text(cita.fechaIso ?: "", fontSize = 12.sp, color = Color.Black, fontWeight = FontWeight.Medium)
             }
 
             Spacer(Modifier.height(8.dp))
@@ -354,7 +353,7 @@ fun TarjetaCitaCompletada(cita: CitaDto) {
                         color = Color.Black
                     )
                     Text(
-                        "Atendido por: ${cita.veterinarioNombre ?: "N/A"}",
+                        cita.motivo ?: "Sin especificar",
                         fontSize = 12.sp,
                         color = Color.Gray
                     )
@@ -372,21 +371,51 @@ fun TarjetaCitaCompletada(cita: CitaDto) {
             Divider(color = Color.LightGray)
             Spacer(Modifier.height(12.dp))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                    Icon(Icons.Default.CalendarToday, contentDescription = null, tint = Color(0xFF7DA581), modifier = Modifier.size(20.dp))
-                    Spacer(Modifier.width(4.dp))
-                    Text(cita.fechaIso ?: "", fontSize = 12.sp, color = Color.Black, fontWeight = FontWeight.Medium)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.CalendarToday, contentDescription = null, tint = Color(0xFF7DA581), modifier = Modifier.size(20.dp))
+                Spacer(Modifier.width(4.dp))
+                Text(cita.fechaIso ?: "", fontSize = 12.sp, color = Color.Black, fontWeight = FontWeight.Medium)
+            }
+
+            Spacer(Modifier.height(8.dp))
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Pets, contentDescription = null, tint = Color(0xFF7DA581), modifier = Modifier.size(20.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("Mascota: ${cita.nombreMascota ?: "N/A"}", fontSize = 12.sp, color = Color.Black)
+            }
+
+            if (!cita.duenioTelefono.isNullOrBlank()) {
+                Spacer(Modifier.height(8.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Phone, contentDescription = null, tint = Color(0xFF7DA581), modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("Tel: ${cita.duenioTelefono}", fontSize = 11.sp, color = Color.Gray)
+                }
+            }
+
+            if (!cita.duenioCorreo.isNullOrBlank()) {
+                Spacer(Modifier.height(8.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Email, contentDescription = null, tint = Color(0xFF7DA581), modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("Email: ${cita.duenioCorreo}", fontSize = 11.sp, color = Color.Gray)
+                }
+            }
+
+            if (!cita.veterinarioNombre.isNullOrBlank()) {
+                Spacer(Modifier.height(8.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.LocalHospital, contentDescription = null, tint = Color(0xFF7DA581), modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("Atendido por: ${cita.veterinarioNombre ?: "N/A"}", fontSize = 12.sp, color = Color.Gray)
                 }
             }
 
             Spacer(Modifier.height(12.dp))
+            Divider(color = Color.LightGray)
+            Spacer(Modifier.height(12.dp))
 
-            // Ficha Técnica
             if (!cita.diagnostico.isNullOrBlank() || !cita.procedimientos.isNullOrBlank() || !cita.recomendaciones.isNullOrBlank()) {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -413,15 +442,29 @@ fun TarjetaCitaCompletada(cita: CitaDto) {
                             Text("Recomendaciones:", fontWeight = FontWeight.SemiBold, fontSize = 11.sp, color = Color.Black)
                             Text(cita.recomendaciones ?: "", fontSize = 10.sp, color = Color.Gray)
                         }
-
-                        if (!cita.notas.isNullOrBlank()) {
-                            Spacer(Modifier.height(8.dp))
-                            Text("Notas:", fontWeight = FontWeight.SemiBold, fontSize = 11.sp, color = Color.Black)
-                            Text(cita.notas ?: "", fontSize = 10.sp, color = Color.Gray)
-                        }
                     }
                 }
                 Spacer(Modifier.height(12.dp))
+            }
+
+            if (!cita.horaInicio.isNullOrBlank() || !cita.horaFin.isNullOrBlank()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { isEditingTime = !isEditingTime }
+                        .padding(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.AccessTime, contentDescription = null, tint = Color(0xFF7DA581), modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("Horario: ${cita.horaInicio ?: "--:--"} - ${cita.horaFin ?: "--:--"}", fontSize = 12.sp, color = Color.Black)
+                }
+            }
+
+            if (!cita.notas.isNullOrBlank()) {
+                Spacer(Modifier.height(8.dp))
+                Text("Notas:", fontWeight = FontWeight.SemiBold, fontSize = 11.sp, color = Color.Black)
+                Text(cita.notas ?: "", fontSize = 10.sp, color = Color.Gray)
             }
 
             if (isEditingTime) {
@@ -534,108 +577,6 @@ fun TarjetaCitaCompletada(cita: CitaDto) {
                                 Text("Cancelar", fontSize = 11.sp)
                             }
                         }
-                    }
-                }
-                Spacer(Modifier.height(12.dp))
-            }
-
-            if (horaInicio.isNotEmpty() || horaFin.isNotEmpty()) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { isEditingTime = !isEditingTime }
-                        .padding(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(Icons.Default.AccessTime, contentDescription = null, tint = Color(0xFF7DA581), modifier = Modifier.size(20.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text("$horaInicio - $horaFin", fontSize = 12.sp, color = Color.Black, fontWeight = FontWeight.Medium)
-                    Spacer(Modifier.width(8.dp))
-                    Icon(Icons.Default.Edit, contentDescription = null, tint = Color(0xFF7DA581), modifier = Modifier.size(16.dp))
-                }
-            } else {
-                Button(
-                    onClick = { isEditingTime = true },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF7DA581)),
-                    shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
-                ) {
-                    Icon(Icons.Default.AccessTime, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text("Registrar Hora de Atención", fontWeight = FontWeight.Bold)
-                }
-            }
-
-            Spacer(Modifier.height(12.dp))
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Pets, contentDescription = null, tint = Color(0xFF7DA581), modifier = Modifier.size(20.dp))
-                Spacer(Modifier.width(8.dp))
-                Text("Mascota: ${cita.nombreMascota ?: "N/A"}", fontSize = 12.sp, color = Color.Black)
-            }
-
-            if (!cita.duenioTelefono.isNullOrBlank()) {
-                Spacer(Modifier.height(8.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Phone, contentDescription = null, tint = Color(0xFF7DA581), modifier = Modifier.size(20.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text("Tel: ${cita.duenioTelefono}", fontSize = 11.sp, color = Color.Gray)
-                }
-            }
-
-            if (!cita.duenioCorreo.isNullOrBlank()) {
-                Spacer(Modifier.height(8.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Email, contentDescription = null, tint = Color(0xFF7DA581), modifier = Modifier.size(20.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Text("Email: ${cita.duenioCorreo}", fontSize = 11.sp, color = Color.Gray)
-                }
-            }
-
-            Spacer(Modifier.height(12.dp))
-            Divider(color = Color.LightGray)
-            Spacer(Modifier.height(12.dp))
-
-            Text("Ficha Médica", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color(0xFF7DA581))
-            Spacer(Modifier.height(8.dp))
-
-            if (!cita.diagnostico.isNullOrBlank()) {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = Color(0xFFF5F1EB),
-                    shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
-                ) {
-                    Column(Modifier.padding(12.dp)) {
-                        Text("Diagnóstico", fontWeight = FontWeight.SemiBold, fontSize = 11.sp, color = Color(0xFF7DA581))
-                        Text(cita.diagnostico, fontSize = 12.sp, color = Color.Black)
-                    }
-                }
-                Spacer(Modifier.height(8.dp))
-            }
-
-            if (!cita.procedimientos.isNullOrBlank()) {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = Color(0xFFF5F1EB),
-                    shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
-                ) {
-                    Column(Modifier.padding(12.dp)) {
-                        Text("Procedimientos", fontWeight = FontWeight.SemiBold, fontSize = 11.sp, color = Color(0xFF7DA581))
-                        Text(cita.procedimientos, fontSize = 12.sp, color = Color.Black)
-                    }
-                }
-                Spacer(Modifier.height(8.dp))
-            }
-
-            if (!cita.recomendaciones.isNullOrBlank()) {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = Color(0xFFF5F1EB),
-                    shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
-                ) {
-                    Column(Modifier.padding(12.dp)) {
-                        Text("Recomendaciones", fontWeight = FontWeight.SemiBold, fontSize = 11.sp, color = Color(0xFF7DA581))
-                        Text(cita.recomendaciones, fontSize = 12.sp, color = Color.Black)
                     }
                 }
             }
