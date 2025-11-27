@@ -40,7 +40,7 @@ fun HistorialCitasScreen() {
     var citasCompletadas by remember { mutableStateOf<List<CitaDto>>(emptyList()) }
     var isLoading by remember { mutableStateOf(false) }
     var selectedTab by remember { mutableStateOf(0) }
-    val pullToRefreshState = rememberPullToRefreshState()
+    rememberPullToRefreshState()
 
     fun loadCitas() {
         isLoading = true
