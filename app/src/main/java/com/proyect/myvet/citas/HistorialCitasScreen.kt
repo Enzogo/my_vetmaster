@@ -11,6 +11,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,6 +40,7 @@ fun HistorialCitasScreen() {
     var citasCompletadas by remember { mutableStateOf<List<CitaDto>>(emptyList()) }
     var isLoading by remember { mutableStateOf(false) }
     var selectedTab by remember { mutableStateOf(0) }
+    val pullToRefreshState = rememberPullToRefreshState()
 
     fun loadCitas() {
         isLoading = true
@@ -46,6 +49,9 @@ fun HistorialCitasScreen() {
                 val api = RetrofitClient.authed(context).create(OwnerApi::class.java)
                 citasPendientes = api.getCitasPendientes()
                 citasCompletadas = api.getCitasCompletadas()
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "✓ Citas actualizadas", Toast.LENGTH_SHORT).show()
+                }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
                     Toast.makeText(context, "Error cargando citas: ${e.message}", Toast.LENGTH_SHORT).show()
@@ -87,7 +93,7 @@ fun HistorialCitasScreen() {
                     Spacer(Modifier.width(12.dp))
                     Column {
                         Text("Historial de Citas", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = Color.Black)
-                        Text("Consulta tus citas pendientes y completadas", style = MaterialTheme.typography.bodySmall, color = Color.Black.copy(alpha = 0.7f))
+                        Text("Desliza hacia abajo para actualizar", style = MaterialTheme.typography.bodySmall, color = Color.Black.copy(alpha = 0.7f))
                     }
                 }
                 IconButton(onClick = { loadCitas() }, enabled = !isLoading) {
@@ -124,11 +130,11 @@ fun HistorialCitasScreen() {
             )
         }
 
-        if (isLoading) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = Color(0xFF7DA581))
-            }
-        } else {
+        PullToRefreshBox(
+            isRefreshing = isLoading,
+            onRefresh = { loadCitas() },
+            modifier = Modifier.fillMaxSize()
+        ) {
             Column(
                 Modifier
                     .fillMaxSize()
@@ -330,6 +336,44 @@ fun TarjetaCitaCompletada(cita: CitaDto) {
             }
 
             Spacer(Modifier.height(12.dp))
+
+            // Ficha Técnica
+            if (!cita.diagnostico.isNullOrBlank() || !cita.procedimientos.isNullOrBlank() || !cita.recomendaciones.isNullOrBlank()) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFF3F3F3)),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
+                ) {
+                    Column(Modifier.padding(12.dp)) {
+                        Text("📋 Ficha Técnica", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color(0xFF7DA581))
+
+                        if (!cita.diagnostico.isNullOrBlank()) {
+                            Spacer(Modifier.height(8.dp))
+                            Text("Diagnóstico:", fontWeight = FontWeight.SemiBold, fontSize = 11.sp, color = Color.Black)
+                            Text(cita.diagnostico ?: "", fontSize = 10.sp, color = Color.Gray)
+                        }
+
+                        if (!cita.procedimientos.isNullOrBlank()) {
+                            Spacer(Modifier.height(8.dp))
+                            Text("Procedimientos:", fontWeight = FontWeight.SemiBold, fontSize = 11.sp, color = Color.Black)
+                            Text(cita.procedimientos ?: "", fontSize = 10.sp, color = Color.Gray)
+                        }
+
+                        if (!cita.recomendaciones.isNullOrBlank()) {
+                            Spacer(Modifier.height(8.dp))
+                            Text("Recomendaciones:", fontWeight = FontWeight.SemiBold, fontSize = 11.sp, color = Color.Black)
+                            Text(cita.recomendaciones ?: "", fontSize = 10.sp, color = Color.Gray)
+                        }
+
+                        if (!cita.notas.isNullOrBlank()) {
+                            Spacer(Modifier.height(8.dp))
+                            Text("Notas:", fontWeight = FontWeight.SemiBold, fontSize = 11.sp, color = Color.Black)
+                            Text(cita.notas ?: "", fontSize = 10.sp, color = Color.Gray)
+                        }
+                    }
+                }
+                Spacer(Modifier.height(12.dp))
+            }
 
             if (isEditingTime) {
                 Card(

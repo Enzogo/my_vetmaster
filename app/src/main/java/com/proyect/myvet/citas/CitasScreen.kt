@@ -149,10 +149,13 @@ fun CitasScreen(
                             DropdownMenuItem(text = { Text("No hay mascotas registradas") }, onClick = { expanded = false })
                         } else {
                             mascotas.forEach { m ->
-                                DropdownMenuItem(text = { Text(m.nombre ?: "(sin nombre)", color = Color.Black) }, onClick = {
-                                    mascotaSeleccionadaId = m.id
-                                    expanded = false
-                                })
+                                DropdownMenuItem(
+                                    text = { Text(m.nombre ?: "(sin nombre)", color = Color(0xFF7DA581), fontWeight = FontWeight.Medium) },
+                                    onClick = {
+                                        mascotaSeleccionadaId = m.id
+                                        expanded = false
+                                    }
+                                )
                             }
                         }
                     }

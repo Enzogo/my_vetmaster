@@ -29,6 +29,7 @@ data class VetCitaDto(
     val duenioTelefono: String? = null,
     val duenioCorreo: String? = null,
     val mascotaNombre: String? = null,
+    val veterinarioNombre: String? = null,
     val notas: String? = null,
     val diagnostico: String? = null,
     val procedimientos: String? = null,

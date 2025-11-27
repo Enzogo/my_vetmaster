@@ -51,30 +51,12 @@ fun limpiarTextoJSON(texto: String): String {
 // Función para extraer contenido legible de un string JSON
 fun formatearRespuestaIA(texto: String): String {
   return try {
-    // Limpia escapes básicos
-    var resultado = texto.replace("\\n", "\n").replace("\\\"", "\"").replace("\\\\", "\\")
-
-    // Si es JSON, lo mejora
-    if (resultado.startsWith("{")) {
-      try {
-        val json = JSONObject(resultado)
-        resultado = json.toString(2)
-      } catch (e: Exception) {
-        // Si falla el parseo JSON, usa el texto limpio
-      }
-    }
-
-    // Elimina caracteres extraños y mejora formato
-    resultado = resultado
-      .replace("\"", "")
-      .replace("{", "")
-      .replace("}", "")
-      .replace("[", "")
-      .replace("]", "")
-      .replace(",", "\n")
+    // Solo limpiar escapes básicos de caracteres
+    texto
+      .replace("\\n", "\n")
+      .replace("\\\"", "\"")
+      .replace("\\\\", "\\")
       .trim()
-
-    resultado
   } catch (e: Exception) {
     texto
   }
@@ -97,6 +79,8 @@ fun PrediagnosticoScreen(navController: NavController) {
     var redFlags by remember { mutableStateOf<String?>(null) }
     var disclaimer by remember { mutableStateOf<String?>(null) }
     var modelUsed by remember { mutableStateOf<String?>(null) }
+    var urgencia by remember { mutableStateOf<String?>(null) }
+    var causasFrecuentes by remember { mutableStateOf<List<String>>(emptyList()) }
 
     // Colores para campos de texto (texto negro completo)
     val textFieldColors = OutlinedTextFieldDefaults.colors(
@@ -312,6 +296,8 @@ fun PrediagnosticoScreen(navController: NavController) {
                 redFlags = null
                 disclaimer = null
                 modelUsed = null
+                urgencia = null
+                causasFrecuentes = emptyList()
 
                 scope.launch {
                     try {
@@ -334,36 +320,63 @@ fun PrediagnosticoScreen(navController: NavController) {
                         )
                         val resp = api.getPrediagnostico(req)
 
-                        if (resp.isSuccessful && resp.body() != null) {
-                            val body = resp.body()!!
-                            val parsed = body.parsed
+                        if (resp.isSuccessful) {
+                            try {
+                                val body = resp.body()
 
-                            if (parsed != null) {
-                                recomendaciones = parsed.recomendaciones
-                                redFlags = parsed.red_flags
-                                disclaimer = parsed.disclaimer
-                                modelUsed = parsed.confidence // Usamos confidence como indicador del modelo
-                                Toast.makeText(context, "✓ Análisis completado", Toast.LENGTH_SHORT).show()
-                            } else {
-                                // Si no hay parsed, mostrar raw
-                                recomendaciones = body.raw ?: "No se pudo obtener recomendaciones"
-                                Toast.makeText(context, "✓ Análisis completado", Toast.LENGTH_SHORT).show()
+                                if (body != null) {
+                                    val parsed = body.parsed
+
+                                    if (parsed != null && !parsed.recomendaciones.isNullOrBlank()) {
+                                        recomendaciones = parsed.recomendaciones
+                                        redFlags = parsed.red_flags
+                                        disclaimer = parsed.disclaimer
+                                        urgencia = parsed.urgencia
+                                        causasFrecuentes = parsed.causas_frecuentes ?: emptyList()
+                                        modelUsed = parsed.urgencia
+                                        Toast.makeText(context, "✓ Análisis completado", Toast.LENGTH_SHORT).show()
+                                    } else if (parsed != null) {
+                                        recomendaciones = "Se generó el análisis pero sin recomendaciones específicas. Por favor consulta con un veterinario."
+                                        redFlags = parsed.red_flags
+                                        disclaimer = parsed.disclaimer
+                                        urgencia = parsed.urgencia
+                                        causasFrecuentes = parsed.causas_frecuentes ?: emptyList()
+                                        Toast.makeText(context, "⚠ Análisis generado con información limitada", Toast.LENGTH_SHORT).show()
+                                    } else {
+                                        // Intentar obtener del body.raw
+                                        recomendaciones = body.raw ?: "No se pudo procesar la respuesta. Intenta de nuevo."
+                                        Toast.makeText(context, "⚠ Respuesta sin estructura completa", Toast.LENGTH_SHORT).show()
+                                    }
+                                } else {
+                                    // Body nulo
+                                    recomendaciones = "Error: respuesta vacía del servidor"
+                                    Toast.makeText(context, "⚠ Respuesta vacía del servidor", Toast.LENGTH_SHORT).show()
+                                }
+                            } catch (parseException: Exception) {
+                                recomendaciones = "Error al procesar respuesta: ${parseException.message}"
+                                Toast.makeText(context, "❌ Error: ${parseException.message}", Toast.LENGTH_SHORT).show()
+                                android.util.Log.e("PrediagnosticoScreen", "Error parsing response", parseException)
                             }
                         } else {
                             val code = resp.code()
+                            val errorBody = resp.errorBody()?.string() ?: "Sin detalles"
                             val msg = when (code) {
                                 401 -> "Sesión expirada. Inicia sesión de nuevo."
                                 400 -> "Petición inválida."
+                                503 -> "Servicio no disponible. Intenta de nuevo."
                                 else -> "Error $code al solicitar prediagnóstico."
                             }
                             Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                            android.util.Log.e("PrediagnosticoScreen", "Error HTTP $code: $errorBody")
                         }
                     } catch (e: Exception) {
                         val msg = when (e) {
                             is HttpException -> "Error HTTP ${e.code()}"
                             else -> "Error de conexión: ${e.message}"
                         }
+                        recomendaciones = msg
                         Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                        android.util.Log.e("PrediagnosticoScreen", "Exception", e)
                     } finally {
                         loading = false
                     }
@@ -463,6 +476,56 @@ fun PrediagnosticoScreen(navController: NavController) {
                     }
                     Spacer(Modifier.height(12.dp))
                 }
+            }
+
+            // Tarjeta de Causas Frecuentes (si existen)
+            if (causasFrecuentes.isNotEmpty()) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFF3E5F5)),
+                    shape = RoundedCornerShape(12.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                ) {
+                    Column(Modifier.padding(16.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Default.List,
+                                contentDescription = null,
+                                tint = Color(0xFF7B1FA2),
+                                modifier = Modifier.size(28.dp)
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                "Causas Frecuentes",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF4A148C)
+                            )
+                        }
+                        Spacer(Modifier.height(12.dp))
+                        causasFrecuentes.forEach { causa ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    "•",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = Color(0xFF7B1FA2),
+                                    modifier = Modifier.padding(end = 8.dp)
+                                )
+                                Text(
+                                    causa,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = Color.Black
+                                )
+                            }
+                        }
+                    }
+                }
+                Spacer(Modifier.height(12.dp))
             }
 
             // Tarjeta de Disclaimer

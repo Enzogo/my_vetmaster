@@ -12,18 +12,21 @@ data class PrediagnosticoRequest(
 )
 
 data class PrediagnosticoParsed(
-    val recomendaciones: String?,
-    val red_flags: String?,
-    val confidence: String?,
-    val fuentes: List<String>?,
-    val disclaimer: String?
+    val recomendaciones: String? = null,
+    val red_flags: String? = null,
+    val confidence: String? = null,
+    val fuentes: List<String>? = null,
+    val disclaimer: String? = null,
+    val urgencia: String? = null,
+    val animal: String? = null,
+    val causas_frecuentes: List<String>? = null
 )
 
 data class PrediagnosticoResp(
-    val ok: Boolean?,
-    val consultId: String?,
-    val parsed: PrediagnosticoParsed?,
-    val raw: String?
+    val ok: Boolean? = null,
+    val consultId: String? = null,
+    val parsed: PrediagnosticoParsed? = null,
+    val raw: String? = null
 )
 
 interface PrediagnosticoApi {
