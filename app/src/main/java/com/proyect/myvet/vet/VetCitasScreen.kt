@@ -75,18 +75,24 @@ fun VetPerfilScreen(navController: NavController) {
                         .padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    // Avatar circular con inicial del nombre
+                    val inicialVet = if (data != null) {
+                        (data!!.nombre?.firstOrNull()?.uppercaseChar() ?: "V").toString()
+                    } else {
+                        "V"
+                    }
                     Box(
                         modifier = Modifier
                             .size(100.dp)
                             .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.3f)),
+                            .background(Color(0xFF5A9E6F)),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.MedicalServices,
-                            contentDescription = "Avatar Veterinario",
-                            modifier = Modifier.size(50.dp),
-                            tint = Color.Black
+                        Text(
+                            text = inicialVet,
+                            style = MaterialTheme.typography.displayMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
                         )
                     }
 
@@ -452,12 +458,30 @@ private fun CitaVetCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Pets, contentDescription = null, tint = Color(0xFF7DA581), modifier = Modifier.size(28.dp))
-                    Spacer(Modifier.width(8.dp))
-                    Column {
-                        Text(mascotaStr, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color.Black)
-                        Text(duenioStr, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                Column(modifier = Modifier.weight(1f)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Pets, contentDescription = null, tint = Color(0xFF7DA581), modifier = Modifier.size(28.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Column {
+                            Text(mascotaStr, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color.Black)
+                            // Mostrar nombre y teléfono del dueño
+                            if (!duenioStr.isNullOrBlank()) {
+                                Text(
+                                    duenioStr,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color.Gray,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                            if (!c.duenioTelefono.isNullOrBlank()) {
+                                Text(
+                                    "📱 ${c.duenioTelefono}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = Color(0xFF7DA581),
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        }
                     }
                 }
 

@@ -55,30 +55,42 @@ fun PerfilScreen(navController: NavController) {
                         .padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // Avatar circular
+                    // Avatar circular con inicial del nombre
+                    val inicial = (state.nombre?.firstOrNull()?.uppercaseChar() ?: state.email?.firstOrNull()?.uppercaseChar() ?: "U").toString()
                     Box(
                         modifier = Modifier
                             .size(100.dp)
                             .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.3f)),
+                            .background(Color(0xFF5A9E6F)),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = if (isVet) Icons.Default.MedicalServices else Icons.Default.Person,
-                            contentDescription = "Avatar",
-                            modifier = Modifier.size(50.dp),
-                            tint = Color.Black
+                        Text(
+                            text = inicial,
+                            style = MaterialTheme.typography.displayMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
                         )
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Nombre/Email
+                    // Nombre (si existe)
+                    if (!state.nombre.isNullOrBlank()) {
+                        Text(
+                            text = state.nombre ?: "Usuario",
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Black,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                    }
+
+                    // Email
                     Text(
-                        text = state.email ?: "Usuario",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Black,
+                        text = state.email ?: "usuario@email.com",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.Black.copy(alpha = 0.7f),
                         textAlign = TextAlign.Center
                     )
 

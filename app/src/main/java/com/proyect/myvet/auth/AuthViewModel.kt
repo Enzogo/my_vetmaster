@@ -38,6 +38,11 @@ class AuthViewModel(app: Application) : AndroidViewModel(app) {
         )
     }
 
+    fun updateNombre(nuevoNombre: String) {
+        repo.updateNombre(nuevoNombre)
+        _state.value = _state.value.copy(nombre = nuevoNombre)
+    }
+
     fun login(email: String, password: String, onSuccess: () -> Unit = {}, onError: (String) -> Unit = {}) {
         _state.value = _state.value.copy(loading = true, error = null)
         viewModelScope.launch {

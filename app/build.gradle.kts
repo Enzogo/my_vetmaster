@@ -46,9 +46,18 @@ android {
 
     // La versión de build tools puede omitirse; si la de tu SDK es 35.0.0, mantén la línea:
     buildToolsVersion = "35.0.0"
+
+    // Habilitar desugaring si usas minSdk < 24
+    configurations {
+        implementation {
+            isCanBeResolved = true
+        }
+    }
 }
 
 dependencies {
+    // Core library desugaring (para APIs de Java usadas en versiones antiguas de Android)
+    coreLibraryDesugaring(libs.android.tools.desugar.jdk.libs)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)

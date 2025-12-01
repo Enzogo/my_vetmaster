@@ -18,8 +18,10 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.proyect.myvet.auth.LocalAuthViewModel
 import com.proyect.myvet.network.OwnerApi
+import com.proyect.myvet.network.OwnerProfileRequest
 import com.proyect.myvet.network.RetrofitClient
 import com.proyect.myvet.network.VetApi
+import com.proyect.myvet.network.VetProfileRequest
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
 
@@ -42,7 +44,6 @@ fun EditarPerfilScreen(navController: NavController) {
     var speciality by remember { mutableStateOf("") }
     var registrationNumber by remember { mutableStateOf("") }
 
-    // Colores para campos de texto (texto negro)
     val textFieldColors = OutlinedTextFieldDefaults.colors(
         focusedTextColor = Color.Black,
         unfocusedTextColor = Color.Black,
@@ -53,7 +54,6 @@ fun EditarPerfilScreen(navController: NavController) {
         unfocusedLabelColor = Color.Gray
     )
 
-    // Cargar datos del perfil existente
     LaunchedEffect(Unit) {
         loading = true
         try {
@@ -76,7 +76,8 @@ fun EditarPerfilScreen(navController: NavController) {
                 direccion = data.direccion ?: ""
             }
         } catch (e: Exception) {
-            Toast.makeText(context, "Error al cargar perfil", Toast.LENGTH_SHORT).show()
+            e.printStackTrace()
+            Toast.makeText(context, "Error al cargar perfil: ${e.message}", Toast.LENGTH_SHORT).show()
         } finally {
             loading = false
         }
@@ -88,7 +89,6 @@ fun EditarPerfilScreen(navController: NavController) {
             .background(Color(0xFFF5F1EB))
             .verticalScroll(rememberScrollState())
     ) {
-        // Encabezado
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -267,8 +267,8 @@ fun EditarPerfilScreen(navController: NavController) {
                                 if (isVet) {
                                     val api = RetrofitClient.authed(context).create(VetApi::class.java)
                                     val ok = api.saveProfile(
-                                        com.proyect.myvet.network.VetProfileRequest(
-                                            nombre = nombre.ifBlank { null },
+                                        VetProfileRequest(
+                                            nombre = nombre,
                                             telefono = telefono.ifBlank { null },
                                             direccion = direccion.ifBlank { null },
                                             clinicName = clinicName.ifBlank { null },
@@ -279,31 +279,40 @@ fun EditarPerfilScreen(navController: NavController) {
                                         )
                                     )
                                     if (ok) {
+                                        authVM.updateNombre(nombre)
                                         Toast.makeText(context, "✓ Perfil guardado exitosamente", Toast.LENGTH_SHORT).show()
                                         navController.popBackStack()
+                                    } else {
+                                        Toast.makeText(context, "No se pudo guardar el perfil", Toast.LENGTH_SHORT).show()
                                     }
                                 } else {
                                     val api = RetrofitClient.authed(context).create(OwnerApi::class.java)
                                     val ok = api.saveProfile(
-                                        OwnerApi.OwnerProfileRequest(
+                                        OwnerProfileRequest(
                                             nombre = nombre,
                                             telefono = telefono.ifBlank { null },
                                             direccion = direccion.ifBlank { null }
                                         )
                                     )
                                     if (ok) {
+                                        authVM.updateNombre(nombre)
                                         Toast.makeText(context, "✓ Perfil guardado exitosamente", Toast.LENGTH_SHORT).show()
                                         navController.popBackStack()
+                                    } else {
+                                        Toast.makeText(context, "No se pudo guardar el perfil", Toast.LENGTH_SHORT).show()
                                     }
                                 }
-                            } catch (e: Exception) {
-                                val code = (e as? HttpException)?.code()
-                                val msg = when (code) {
-                                    401 -> "Sesión expirada. Inicia sesión."
-                                    404 -> if (isVet) "Falta /api/vet/me/profile en backend." else "Endpoint de perfil no encontrado."
-                                    else -> "Error al guardar perfil: ${e.message}"
+                            } catch (e: HttpException) {
+                                val msg = when (e.code()) {
+                                    401 -> "Sesión expirada. Inicia sesión nuevamente."
+                                    404 -> "Endpoint no encontrado en el servidor."
+                                    500 -> "Error en el servidor. Intenta más tarde."
+                                    else -> "Error HTTP ${e.code()}: ${e.message()}"
                                 }
                                 Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                            } catch (e: Exception) {
+                                Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                                e.printStackTrace()
                             }
                         }
                     },
@@ -334,3 +343,4 @@ fun EditarPerfilScreen(navController: NavController) {
         }
     }
 }
+

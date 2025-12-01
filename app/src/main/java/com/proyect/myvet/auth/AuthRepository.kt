@@ -80,4 +80,8 @@ class AuthRepository(private val context: Context) {
     fun logout() {
         prefs.edit().clear().apply()
     }
+
+    fun updateNombre(nuevoNombre: String) {
+        prefs.edit().putString("nombre", nuevoNombre).apply()
+    }
 }

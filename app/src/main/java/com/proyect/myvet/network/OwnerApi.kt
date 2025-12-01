@@ -86,13 +86,13 @@ data class OwnerProfileResponse(
     val email: String? = null
 )
 
-interface OwnerApi {
-    data class OwnerProfileRequest(
-        val nombre: String,
-        val telefono: String?,
-        val direccion: String?
-    )
+data class OwnerProfileRequest(
+    val nombre: String,
+    val telefono: String?,
+    val direccion: String?
+)
 
+interface OwnerApi {
     @GET("api/owners/me")
     suspend fun me(): OwnerProfileResponse
 
