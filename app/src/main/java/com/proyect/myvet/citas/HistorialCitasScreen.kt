@@ -23,7 +23,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.proyect.myvet.network.CitaDto
 import com.proyect.myvet.network.OwnerApi
-import com.proyect.myvet.network.RetrofitClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -47,7 +46,7 @@ fun HistorialCitasScreen() {
         isLoading = true
         scope.launch(Dispatchers.IO) {
             try {
-                val api = RetrofitClient.authed(context).create(OwnerApi::class.java)
+                val api = com.proyect.myvet.network.RetrofitClient.authed(context).create(OwnerApi::class.java)
                 println("[HistorialCitas] Iniciando carga de citas...")
 
                 // Cargar pendientes
@@ -195,7 +194,23 @@ fun HistorialCitasScreen() {
                         EmptyStateCard("No hay citas pendientes")
                     } else {
                         citasPendientes.forEach { cita ->
-                            TarjetaCitaPendiente(cita)
+                            TarjetaCitaPendiente(cita, onDelete = { id ->
+                                // Lógica de eliminación: llamar al API y actualizar la lista
+                                scope.launch(Dispatchers.IO) {
+                                    try {
+                                        val api = com.proyect.myvet.network.RetrofitClient.authed(context).create(OwnerApi::class.java)
+                                        api.deleteCita(id)
+                                        withContext(Dispatchers.Main) {
+                                            Toast.makeText(context, "✓ Cita eliminada", Toast.LENGTH_SHORT).show()
+                                            citasPendientes = citasPendientes.filter { it.id != id }
+                                        }
+                                    } catch (e: Exception) {
+                                        withContext(Dispatchers.Main) {
+                                            Toast.makeText(context, "Error al eliminar: ${e.message}", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                }
+                            })
                             Spacer(Modifier.height(12.dp))
                         }
                     }
@@ -246,7 +261,9 @@ private fun EmptyStateCard(message: String) {
 }
 
 @Composable
-fun TarjetaCitaPendiente(cita: CitaDto) {
+fun TarjetaCitaPendiente(cita: CitaDto, onDelete: (String) -> Unit = {}) {
+    var showConfirm by remember { mutableStateOf(false) }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -272,13 +289,19 @@ fun TarjetaCitaPendiente(cita: CitaDto) {
                         color = Color.Gray
                     )
                 }
-                AssistChip(
-                    onClick = {},
-                    label = { Text("PENDIENTE", color = Color.White, fontSize = 10.sp) },
-                    colors = AssistChipDefaults.assistChipColors(
-                        containerColor = Color(0xFFFF9800)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    AssistChip(
+                        onClick = {},
+                        label = { Text("PENDIENTE", color = Color.White, fontSize = 10.sp) },
+                        colors = AssistChipDefaults.assistChipColors(
+                            containerColor = Color(0xFFFF9800)
+                        )
                     )
-                )
+                    Spacer(Modifier.width(8.dp))
+                    IconButton(onClick = { showConfirm = true }) {
+                        Icon(Icons.Default.Delete, contentDescription = "Eliminar cita", tint = Color(0xFFD32F2F))
+                    }
+                }
             }
 
             Spacer(Modifier.height(12.dp))
@@ -315,6 +338,21 @@ fun TarjetaCitaPendiente(cita: CitaDto) {
                     Spacer(Modifier.width(8.dp))
                     Text("Email: ${cita.duenioCorreo}", fontSize = 11.sp, color = Color.Gray)
                 }
+            }
+
+            if (showConfirm) {
+                AlertDialog(
+                    onDismissRequest = { showConfirm = false },
+                    title = { Text("Eliminar cita") },
+                    text = { Text("¿Estás seguro que deseas eliminar esta cita?") },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            showConfirm = false
+                            cita.id?.let { onDelete(it) }
+                        }) { Text("Eliminar") }
+                    },
+                    dismissButton = { TextButton(onClick = { showConfirm = false }) { Text("Cancelar") } }
+                )
             }
         }
     }
@@ -537,7 +575,7 @@ fun TarjetaCitaCompletada(cita: CitaDto) {
                                 onClick = {
                                     scope.launch(Dispatchers.IO) {
                                         try {
-                                            val api = RetrofitClient.authed(context).create(OwnerApi::class.java)
+                                            val api = com.proyect.myvet.network.RetrofitClient.authed(context).create(OwnerApi::class.java)
                                             val updateRequest = com.proyect.myvet.network.CitaUpdateRequest(
                                                 horaInicio = horaInicio,
                                                 horaFin = horaFin

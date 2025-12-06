@@ -82,17 +82,31 @@ fun PrediagnosticoScreen(navController: NavController) {
     var urgencia by remember { mutableStateOf<String?>(null) }
     var causasFrecuentes by remember { mutableStateOf<List<String>>(emptyList()) }
 
+    // Color principal compartido con la pestaña IA
+    val mainGreen = Color(0xFF7DA581)
+
     // Colores para campos de texto (texto negro completo)
     val textFieldColors = OutlinedTextFieldDefaults.colors(
         focusedTextColor = Color.Black,
         unfocusedTextColor = Color.Black,
         cursorColor = Color.Black,
-        focusedBorderColor = Color(0xFF7DA581),
+        focusedBorderColor = mainGreen,
         unfocusedBorderColor = Color.Gray,
-        focusedLabelColor = Color(0xFF7DA581),
+        focusedLabelColor = mainGreen,
         unfocusedLabelColor = Color.Gray,
         focusedPlaceholderColor = Color.Gray,
         unfocusedPlaceholderColor = Color.Gray
+    )
+
+    // Colores específicos para dropdown en selector (texto verde como en IA)
+    val dropdownColors = OutlinedTextFieldDefaults.colors(
+        focusedTextColor = mainGreen,
+        unfocusedTextColor = mainGreen,
+        cursorColor = mainGreen,
+        focusedBorderColor = mainGreen,
+        unfocusedBorderColor = mainGreen.copy(alpha = 0.5f),
+        focusedLabelColor = mainGreen,
+        unfocusedLabelColor = mainGreen
     )
 
     // Cargar mascotas del usuario
@@ -118,7 +132,7 @@ fun PrediagnosticoScreen(navController: NavController) {
         // Encabezado
         Card(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFF7DA581)),
+            colors = CardDefaults.cardColors(containerColor = mainGreen),
             shape = RoundedCornerShape(12.dp),
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         ) {
@@ -165,7 +179,7 @@ fun PrediagnosticoScreen(navController: NavController) {
                     "Selecciona tu mascota",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF7DA581)
+                    color = mainGreen
                 )
                 Spacer(Modifier.height(12.dp))
 
@@ -179,13 +193,13 @@ fun PrediagnosticoScreen(navController: NavController) {
                         value = mascotas.firstOrNull { it.id == mascotaSeleccionadaId }?.nombre
                             ?: if (mascotasLoading) "Cargando mascotas..." else "Seleccionar Mascota",
                         onValueChange = {},
-                        label = { Text("Mascota") },
-                        leadingIcon = { Icon(Icons.Default.Pets, contentDescription = null) },
+                        label = { Text("Mascota", color = mainGreen) },
+                        leadingIcon = { Icon(Icons.Default.Pets, contentDescription = null, tint = mainGreen) },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                         modifier = Modifier
                             .menuAnchor()
                             .fillMaxWidth(),
-                        colors = textFieldColors
+                        colors = dropdownColors
                     )
                     ExposedDropdownMenu(
                         expanded = expanded,
@@ -193,13 +207,13 @@ fun PrediagnosticoScreen(navController: NavController) {
                     ) {
                         if (mascotas.isEmpty()) {
                             DropdownMenuItem(
-                                text = { Text("No hay mascotas registradas") },
+                                text = { Text("No hay mascotas registradas", color = mainGreen) },
                                 onClick = { expanded = false }
                             )
                         } else {
                             mascotas.forEach { m ->
                                 DropdownMenuItem(
-                                    text = { Text(m.nombre ?: "(sin nombre)", color = Color.Black) },
+                                    text = { Text(m.nombre ?: "(sin nombre)", color = mainGreen) },
                                     onClick = {
                                         mascotaSeleccionadaId = m.id
                                         expanded = false
@@ -226,7 +240,7 @@ fun PrediagnosticoScreen(navController: NavController) {
                     "Describe los síntomas",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF7DA581)
+                    color = mainGreen
                 )
                 Spacer(Modifier.height(12.dp))
 
@@ -383,7 +397,7 @@ fun PrediagnosticoScreen(navController: NavController) {
                 }
             },
             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF7DA581)),
+            colors = ButtonDefaults.buttonColors(containerColor = mainGreen),
             shape = RoundedCornerShape(12.dp),
             enabled = !loading
         ) {
@@ -589,7 +603,7 @@ fun PrediagnosticoScreen(navController: NavController) {
                     navController.navigate("${NavigationItem.Citas.route}?motivo=$motivo")
                 },
                 modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF7DA581)),
+                colors = ButtonDefaults.buttonColors(containerColor = mainGreen),
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Icon(Icons.Default.CalendarMonth, contentDescription = null)
@@ -599,4 +613,3 @@ fun PrediagnosticoScreen(navController: NavController) {
         }
     }
 }
-

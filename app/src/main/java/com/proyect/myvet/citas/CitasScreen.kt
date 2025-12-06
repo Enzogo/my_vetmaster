@@ -73,15 +73,29 @@ fun CitasScreen(
     var selectedTimeText by remember { mutableStateOf("") }
     var calendar = remember { Calendar.getInstance() }
 
-    // Colores para campos de texto (texto negro)
+    // Color principal compartido con la pestaña IA
+    val mainGreen = Color(0xFF7DA581)
+
+    // Colores por defecto para campos (texto negro)
     val textFieldColors = OutlinedTextFieldDefaults.colors(
         focusedTextColor = Color.Black,
         unfocusedTextColor = Color.Black,
         cursorColor = Color.Black,
-        focusedBorderColor = Color(0xFF7DA581),
+        focusedBorderColor = mainGreen,
         unfocusedBorderColor = Color.Gray,
-        focusedLabelColor = Color(0xFF7DA581),
+        focusedLabelColor = mainGreen,
         unfocusedLabelColor = Color.Gray
+    )
+
+    // Colores específicos para los dropdown (usar texto en verde como en IA)
+    val dropdownColors = OutlinedTextFieldDefaults.colors(
+        focusedTextColor = mainGreen,
+        unfocusedTextColor = mainGreen,
+        cursorColor = mainGreen,
+        focusedBorderColor = mainGreen,
+        unfocusedBorderColor = mainGreen.copy(alpha = 0.5f),
+        focusedLabelColor = mainGreen,
+        unfocusedLabelColor = mainGreen
     )
 
     // Cargar mascotas y veterinarios - EXACTO COMO PREDIAGNOSTICO
@@ -119,7 +133,7 @@ fun CitasScreen(
     ) {
         Card(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFF7DA581)),
+            colors = CardDefaults.cardColors(containerColor = mainGreen),
             shape = RoundedCornerShape(12.dp),
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         ) {
@@ -143,7 +157,7 @@ fun CitasScreen(
         // Selector de mascota
         Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = Color.White), shape = RoundedCornerShape(12.dp)) {
             Column(Modifier.padding(16.dp)) {
-                Text("Selecciona tu mascota", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color(0xFF7DA581))
+                Text("Selecciona tu mascota", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = mainGreen)
                 Spacer(Modifier.height(8.dp))
 
                 var expanded by remember { mutableStateOf(false) }
@@ -153,21 +167,21 @@ fun CitasScreen(
                         value = mascotas.firstOrNull { it.id == mascotaSeleccionadaId }?.nombre
                             ?: if (mascotasLoading) "Cargando mascotas..." else "Seleccionar Mascota",
                         onValueChange = {},
-                        label = { Text("Mascota") },
-                        leadingIcon = { Icon(Icons.Default.Pets, contentDescription = null) },
+                        label = { Text("Mascota", color = mainGreen) },
+                        leadingIcon = { Icon(Icons.Default.Pets, contentDescription = null, tint = mainGreen) },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                         modifier = Modifier
                             .menuAnchor()
                             .fillMaxWidth(),
-                        colors = textFieldColors
+                        colors = dropdownColors
                     )
                     ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                         if (mascotas.isEmpty()) {
-                            DropdownMenuItem(text = { Text("No hay mascotas registradas") }, onClick = { expanded = false })
+                            DropdownMenuItem(text = { Text("No hay mascotas registradas", color = mainGreen) }, onClick = { expanded = false })
                         } else {
                             mascotas.forEach { m ->
                                 DropdownMenuItem(
-                                    text = { Text(m.nombre ?: "(sin nombre)", color = Color(0xFF7DA581), fontWeight = FontWeight.Medium) },
+                                    text = { Text(m.nombre ?: "(sin nombre)", color = mainGreen, fontWeight = FontWeight.Medium) },
                                     onClick = {
                                         mascotaSeleccionadaId = m.id
                                         expanded = false
@@ -185,7 +199,7 @@ fun CitasScreen(
         // Selector de veterinario (opcional)
         Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = Color.White), shape = RoundedCornerShape(12.dp)) {
             Column(Modifier.padding(16.dp)) {
-                Text("Selecciona veterinario (opcional)", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color(0xFF7DA581))
+                Text("Selecciona veterinario (opcional)", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = mainGreen)
                 Spacer(Modifier.height(8.dp))
 
                 var expandedVet by remember { mutableStateOf(false) }
@@ -195,17 +209,17 @@ fun CitasScreen(
                         value = veterinarios.firstOrNull { it.id == veterinarioSeleccionadoId }?.nombre
                             ?: if (veterinariosLoading) "Cargando..." else "Sin seleccionar",
                         onValueChange = {},
-                        label = { Text("Veterinario") },
-                        leadingIcon = { Icon(Icons.Default.LocalHospital, contentDescription = null) },
+                        label = { Text("Veterinario", color = mainGreen) },
+                        leadingIcon = { Icon(Icons.Default.LocalHospital, contentDescription = null, tint = mainGreen) },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedVet) },
                         modifier = Modifier
                             .menuAnchor()
                             .fillMaxWidth(),
-                        colors = textFieldColors
+                        colors = dropdownColors
                     )
                     ExposedDropdownMenu(expanded = expandedVet, onDismissRequest = { expandedVet = false }) {
                         DropdownMenuItem(
-                            text = { Text("Sin seleccionar") },
+                            text = { Text("Sin seleccionar", color = mainGreen) },
                             onClick = {
                                 veterinarioSeleccionadoId = null
                                 expandedVet = false
@@ -214,7 +228,7 @@ fun CitasScreen(
                         if (veterinarios.isNotEmpty()) {
                             veterinarios.forEach { v ->
                                 DropdownMenuItem(
-                                    text = { Text(v.nombre ?: v.email ?: "(sin nombre)") },
+                                    text = { Text(v.nombre ?: v.email ?: "(sin nombre)", color = mainGreen) },
                                     onClick = {
                                         veterinarioSeleccionadoId = v.id
                                         expandedVet = false
@@ -232,7 +246,7 @@ fun CitasScreen(
         // Motivo
         Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = Color.White), shape = RoundedCornerShape(12.dp)) {
             Column(Modifier.padding(16.dp)) {
-                Text("Motivo de la cita", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color(0xFF7DA581))
+                Text("Motivo de la cita", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = mainGreen)
                 Spacer(Modifier.height(8.dp))
                 OutlinedTextField(
                     value = motivoCita,
@@ -252,7 +266,7 @@ fun CitasScreen(
         // Fecha y hora
         Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = Color.White), shape = RoundedCornerShape(12.dp)) {
             Column(Modifier.padding(16.dp)) {
-                Text("Fecha y hora", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color(0xFF7DA581))
+                Text("Fecha y hora", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = mainGreen)
                 Spacer(Modifier.height(12.dp))
 
                 val today = Calendar.getInstance()
