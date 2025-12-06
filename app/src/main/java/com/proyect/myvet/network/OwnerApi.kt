@@ -64,7 +64,8 @@ data class CitaDto(
 data class CitaCreateRequest(
     val fechaIso: String,
     val motivo: String,
-    val mascotaId: String
+    val mascotaId: String,
+    val veterinarioId: String? = null
 )
 
 data class CitaUpdateRequest(
@@ -92,12 +93,22 @@ data class OwnerProfileRequest(
     val direccion: String?
 )
 
+data class VeterinarioDto(
+    val id: String,
+    val nombre: String?,
+    val email: String?,
+    val role: String? = null
+)
+
 interface OwnerApi {
     @GET("api/owners/me")
     suspend fun me(): OwnerProfileResponse
 
     @POST("api/owners/me/profile")
     suspend fun saveProfile(@Body body: OwnerProfileRequest): Boolean
+
+    @GET("api/owners/veterinarios")
+    suspend fun getVeterinarios(): List<VeterinarioDto>
 
     @GET("api/owners/me/mascotas")
     suspend fun getMyMascotas(): List<MascotaDto>

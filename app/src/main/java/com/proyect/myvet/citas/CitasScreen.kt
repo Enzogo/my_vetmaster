@@ -29,7 +29,6 @@ import androidx.navigation.NavController
 import com.proyect.myvet.NavigationItem
 import com.proyect.myvet.Notificacion
 import com.proyect.myvet.historial.HistorialCita
-import com.proyect.myvet.historial.HistorialManager
 import com.proyect.myvet.network.CitaCreateRequest
 import com.proyect.myvet.network.OwnerApi
 import com.proyect.myvet.network.RetrofitClient
@@ -39,6 +38,7 @@ import kotlinx.coroutines.withContext
 import retrofit2.HttpException
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.jvm.java
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,6 +52,10 @@ fun CitasScreen(
     var mascotas by remember { mutableStateOf<List<com.proyect.myvet.network.MascotaDto>>(emptyList()) }
     var mascotaSeleccionadaId by remember { mutableStateOf<String?>(null) }
     var mascotasLoading by remember { mutableStateOf(false) }
+
+    var veterinarios by remember { mutableStateOf<List<com.proyect.myvet.network.VeterinarioDto>>(emptyList()) }
+    var veterinarioSeleccionadoId by remember { mutableStateOf<String?>(null) }
+    var veterinariosLoading by remember { mutableStateOf(false) }
 
     // Prellenar el motivo si viene desde prediagnóstico (decodificar URL)
     val motivoPrefill = remember(motivoInicial) {
@@ -80,16 +84,29 @@ fun CitasScreen(
         unfocusedLabelColor = Color.Gray
     )
 
-    // Cargar mascotas del usuario al iniciar
+    // Cargar mascotas y veterinarios - EXACTO COMO PREDIAGNOSTICO
     LaunchedEffect(Unit) {
         mascotasLoading = true
+        veterinariosLoading = true
         try {
             val api = RetrofitClient.authed(context).create(OwnerApi::class.java)
             mascotas = api.getMyMascotas()
-        } catch (_: Exception) {
-            Toast.makeText(context, "No se pudieron cargar mascotas", Toast.LENGTH_SHORT).show()
+
+            // Obtener todos los veterinarios y filtrar
+            val allVets = api.getVeterinarios()
+            // Filtrar: mantener solo aquellos con role "veterinario" o que tengan nombre/email válidos
+            veterinarios = allVets.filter { vet ->
+                (vet.role == "veterinario") || (!vet.nombre.isNullOrBlank() || !vet.email.isNullOrBlank())
+            }
+
+            println("[CitasScreen] ✓ Datos cargados - Mascotas: ${mascotas.size}, Veterinarios: ${veterinarios.size}")
+        } catch (e: Exception) {
+            println("[CitasScreen] ✗ Error: ${e.message}")
+            e.printStackTrace()
+            Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
         } finally {
             mascotasLoading = false
+            veterinariosLoading = false
         }
     }
 
@@ -154,6 +171,53 @@ fun CitasScreen(
                                     onClick = {
                                         mascotaSeleccionadaId = m.id
                                         expanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        Spacer(Modifier.height(16.dp))
+
+        // Selector de veterinario (opcional)
+        Card(modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = Color.White), shape = RoundedCornerShape(12.dp)) {
+            Column(Modifier.padding(16.dp)) {
+                Text("Selecciona veterinario (opcional)", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color(0xFF7DA581))
+                Spacer(Modifier.height(8.dp))
+
+                var expandedVet by remember { mutableStateOf(false) }
+                ExposedDropdownMenuBox(expanded = expandedVet, onExpandedChange = { expandedVet = !expandedVet }) {
+                    OutlinedTextField(
+                        readOnly = true,
+                        value = veterinarios.firstOrNull { it.id == veterinarioSeleccionadoId }?.nombre
+                            ?: if (veterinariosLoading) "Cargando..." else "Sin seleccionar",
+                        onValueChange = {},
+                        label = { Text("Veterinario") },
+                        leadingIcon = { Icon(Icons.Default.LocalHospital, contentDescription = null) },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedVet) },
+                        modifier = Modifier
+                            .menuAnchor()
+                            .fillMaxWidth(),
+                        colors = textFieldColors
+                    )
+                    ExposedDropdownMenu(expanded = expandedVet, onDismissRequest = { expandedVet = false }) {
+                        DropdownMenuItem(
+                            text = { Text("Sin seleccionar") },
+                            onClick = {
+                                veterinarioSeleccionadoId = null
+                                expandedVet = false
+                            }
+                        )
+                        if (veterinarios.isNotEmpty()) {
+                            veterinarios.forEach { v ->
+                                DropdownMenuItem(
+                                    text = { Text(v.nombre ?: v.email ?: "(sin nombre)") },
+                                    onClick = {
+                                        veterinarioSeleccionadoId = v.id
+                                        expandedVet = false
                                     }
                                 )
                             }
@@ -263,36 +327,18 @@ fun CitasScreen(
                 scope.launch(Dispatchers.IO) {
                     try {
                         val api = RetrofitClient.authed(context).create(OwnerApi::class.java)
-                        val response = api.createCita(CitaCreateRequest(fechaIso, motivoCita, mascotaId))
+                        val response = api.createCita(CitaCreateRequest(fechaIso, motivoCita, mascotaId, veterinarioSeleccionadoId))
 
                         if (response.isSuccessful && response.body() != null) {
                             val created = response.body()!!
                             println("[CitasScreen] ✓ Cita creada: ${created.id}")
 
-                            // Sólo programar recordatorio después de confirmar persistencia
                             scheduleExactAlarm(context, calendar.timeInMillis, created.motivo ?: motivoCita)
 
-                            // Historial local (si existe en tu app)
-                            try {
-                                HistorialManager.guardarCita(
-                                    context,
-                                    HistorialCita(
-                                        System.currentTimeMillis(),
-                                        "(id ${created.mascotaId ?: mascotaId})",
-                                        "",
-                                        created.motivo ?: motivoCita,
-                                        selectedDateText,
-                                        selectedTimeText
-                                    )
-                                )
-                            } catch (_: Throwable) { /* ignora si no existe */ }
-
-                            // Esperar un poco para asegurar que la BD persistió
                             kotlinx.coroutines.delay(1500)
 
                             withContext(Dispatchers.Main) {
                                 Toast.makeText(context, "✓ Cita agendada exitosamente", Toast.LENGTH_SHORT).show()
-                                // Navegar al HistorialCitasScreen para que vea la cita recién creada
                                 navController.navigate(NavigationItem.Historial.route) {
                                     popUpTo(NavigationItem.Citas.route) { saveState = true }
                                     launchSingleTop = true
@@ -325,10 +371,9 @@ fun CitasScreen(
         }
 
         Spacer(Modifier.height(24.dp))
-
-        // Aquí podrías listar próximas citas, historial, etc. (no modificado)
     }
 }
+
 
 @SuppressLint("ScheduleExactAlarm")
 private fun scheduleExactAlarm(
